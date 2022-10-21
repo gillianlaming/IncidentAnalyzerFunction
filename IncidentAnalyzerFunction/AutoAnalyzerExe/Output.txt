@@ -1,0 +1,61 @@
+
+----------------------------Stamp Information-----------------------------------
+
+Has Pv3                  	False
+Hyper-V Containers       	False
+Is AZ enabled            	False
+Is a VMSS stamp          	False
+Is a flexstamp           	True
+Is a hybrid stamp        	False
+Is a linux stamp         	False
+Is a megastamp           	True
+Is a ministamp           	False
+Is a single tenant stamp 	False
+
+Cluster:  wawscus
+Database: wawsprod
+
+--------------------- Recent Deployments (past 5 days) -------------------
+
+DeploymentId: 	a9168e0f-778c-4df4-abb7-b28edee9ee21
+StartTime:    	10/19/2022 7:52:56 AM
+EndTime:      	10/20/2022 9:15:35 AM
+TemplateName: 	Antares_PrevalUpgrade.xml
+Details:      	Deployment finished, finalStateReached = True.
+
+DeploymentId: 	e06fd157-535a-4ca6-b842-c04d6ce46adc
+StartTime:    	10/20/2022 9:15:29 AM
+EndTime:      	
+TemplateName: 	Antares_PrevalUpgrade
+Details:      	Starting a deployment task, 12 deployments in progress, owner pavelzel@ame.gbl;C68ACAFA296450961BBFBB56382926CE67785691;AcisExtHost.exe (Acis-438425 running 1.0.4.2090, Worker-0100000Q, pavelzel@ame.gbl)
+
+
+Running tests......
+
+
+-----------------Tests have completed. Please see your results below------------------
+
+Tests Run:
+
+TestForStorageIssue              ----------------->  Passed
+TestForSpikeInFrontEndTraffic    ----------------->  Passed
+TestSpikeInFrontEndErrors        ----------------->  Passed
+TestForProblemWorkersForSLASites ----------------->  ProblemDetected
+ - We detected SLA site failures on the following workers:
+Sc_status:     	503
+Sc_substatus:  	0
+win32_status:  	1115
+EventIpAddress:	100.115.220.29
+Count:         	21
+
+
+
+TestFor503_65                    ----------------->  ProblemDetected
+ - There were 3360 503.65 errors on the frontend were detected. Manual action to scale out the worker pool may be needed
+
+
+---------------------------------------------------------------------------------------
+
+Results summary:
+8	WorkerErrorsForSLASites
+1	503.65 errors detected
