@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Threading;
 using System.Collections.Generic;
+using System.Text;
 
 namespace IncidentAnalyzerFunction
 {
@@ -22,36 +23,39 @@ namespace IncidentAnalyzerFunction
             ILogger log)
         {
             string stampName = ParseStampNameFromIncidentName(req.Query["incidentName"]);
-            string startTime = req.Query["startTime"];
+            string startTime = ParseTimeStampFromIncidentName(req.Query["incidentName"]);
             log.LogInformation($"stampname is {stampName}");
             log.LogInformation($"starttime is {startTime}");
-
-            /*
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-            string name = name ?? data?.name;
-            */
 
             //string applicationFilePath = @"C:\Users\glaming\source\repos\IncidentAnalyzerFunction\IncidentAnalyzerFunction\AutoAnalyzerExe\ExptKustoQuery.exe";
             string applicationFilePath = @"c:\home\site\wwwroot\ExptKustoQuery.exe";
             Process autoAnalyzerJob = Process.Start(applicationFilePath, $"{stampName} {startTime}");
 
-            // TODO: implement timeout
-            while (!autoAnalyzerJob.HasExited)
-            {
-                Thread.Sleep(5000); // sleep for 5 seconds to avoid tight while loop
-            }
+            autoAnalyzerJob.WaitForExit();
 
             //string fileName = @"C:\Users\glaming\source\repos\IncidentAnalyzerFunction\IncidentAnalyzerFunction\AutoAnalyzerExe\Output.txt";
             string fileName = @"c:\home\LogFiles\Output.txt";
 
-            IEnumerable<string> lines = File.ReadLines(fileName);
-            Console.WriteLine(String.Join(Environment.NewLine, lines));
+            string[] lines = File.ReadAllLines(fileName);
+            StringBuilder sb = new StringBuilder();
 
-            string responseMessage = String.Join(Environment.NewLine, lines);
+            foreach (string line in lines)
+            {
+                sb.AppendLine(line);
+                sb.Append("<br>");
+            }
+
+            //IEnumerable<string> lines = File.ReadLines(fileName);
+            //Console.WriteLine(String.Join(Environment.NewLine, lines));
+
+            string responseMessage = sb.ToString();
             return new OkObjectResult(responseMessage);
+        }
 
-            
+        private static string ParseTimeStampFromIncidentName(string incidentName)
+        {
+            int startIndex = incidentName.IndexOf("StartTime:") + "StartTime:".Length;
+            return incidentName.Substring(startIndex).Trim();
         }
 
         public static string ParseStampNameFromIncidentName(string incidentName)
