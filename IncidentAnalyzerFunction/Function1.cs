@@ -21,7 +21,7 @@ namespace IncidentAnalyzerFunction
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
-            string stampName = req.Query["stampName"];
+            string stampName = ParseStampNameFromIncidentName(req.Query["incidentName"]);
             string startTime = req.Query["startTime"];
             log.LogInformation($"stampname is {stampName}");
             log.LogInformation($"starttime is {startTime}");
@@ -32,9 +32,8 @@ namespace IncidentAnalyzerFunction
             string name = name ?? data?.name;
             */
 
-            // this needs to be an absolute path. consider uploading to network share?
-            string applicationFilePath = @"C:\Users\glaming\source\repos\IncidentAnalyzerFunction\IncidentAnalyzerFunction\AutoAnalyzerExe\ExptKustoQuery.exe";
-
+            //string applicationFilePath = @"C:\Users\glaming\source\repos\IncidentAnalyzerFunction\IncidentAnalyzerFunction\AutoAnalyzerExe\ExptKustoQuery.exe";
+            string applicationFilePath = @"c:\home\site\wwwroot\ExptKustoQuery.exe";
             Process autoAnalyzerJob = Process.Start(applicationFilePath, $"{stampName} {startTime}");
 
             // TODO: implement timeout
@@ -43,7 +42,8 @@ namespace IncidentAnalyzerFunction
                 Thread.Sleep(5000); // sleep for 5 seconds to avoid tight while loop
             }
 
-            string fileName = @"C:\Users\glaming\source\repos\IncidentAnalyzerFunction\IncidentAnalyzerFunction\AutoAnalyzerExe\Output.txt";
+            //string fileName = @"C:\Users\glaming\source\repos\IncidentAnalyzerFunction\IncidentAnalyzerFunction\AutoAnalyzerExe\Output.txt";
+            string fileName = @"c:\home\LogFiles\Output.txt";
 
             IEnumerable<string> lines = File.ReadLines(fileName);
             Console.WriteLine(String.Join(Environment.NewLine, lines));
@@ -52,6 +52,22 @@ namespace IncidentAnalyzerFunction
             return new OkObjectResult(responseMessage);
 
             
+        }
+
+        public static string ParseStampNameFromIncidentName(string incidentName)
+        {
+            int stampNameLength = 17; // standard length of stamp name for stamps in format waws-prod-xx#-###
+            if (incidentName.Contains("euap", StringComparison.OrdinalIgnoreCase))
+            {
+                stampNameLength = 21;
+            }
+            else if (incidentName.Contains("msftint", StringComparison.OrdinalIgnoreCase))
+            {
+                stampNameLength = 24;
+            }
+
+            int start = incidentName.IndexOf("waws");
+            return incidentName.Substring(start, stampNameLength);
         }
     }
 }
