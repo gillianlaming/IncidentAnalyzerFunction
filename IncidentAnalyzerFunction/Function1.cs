@@ -12,6 +12,7 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using Microsoft.Azure.Services.AppAuthentication;
+using System.Text;
 
 namespace IncidentAnalyzerFunction
 {
