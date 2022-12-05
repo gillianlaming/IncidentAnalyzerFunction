@@ -39,10 +39,17 @@ namespace IncidentAnalyzerFunction
                     Thread.Sleep(1000 * 10);
                 }
 
-                IEnumerable<string> lines = File.ReadLines(autoTriager.OutputFilePath);
-                Console.WriteLine(String.Join(Environment.NewLine, lines));
+                string[] lines = File.ReadAllLines(autoTriager.OutputFilePath);
 
-                string responseMessage = String.Join(Environment.NewLine, lines);
+                StringBuilder sb = new StringBuilder();
+
+                foreach (string line in lines)
+                {
+                    sb.AppendLine(line);
+                    sb.Append("<br>");
+                }
+
+                string responseMessage = sb.ToString();
                 return new OkObjectResult(responseMessage);
             }
             catch (Exception ex)
