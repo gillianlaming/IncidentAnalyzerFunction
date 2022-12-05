@@ -31,7 +31,7 @@ namespace IncidentAnalyzerFunction
                 log.LogInformation($"stampname is {stampName}");
                 log.LogInformation($"starttime is {startTime}");
 
-                AutoTriager autoTriager = new AutoTriager(stampName, startTime);
+                AutoTriager autoTriager = new AutoTriager(stampName, startTime, AutoTriager.IncidentType.CanaryTwoPercent);
                 autoTriager.Run();
 
                 while (autoTriager.IsRunning)
@@ -55,6 +55,11 @@ namespace IncidentAnalyzerFunction
 
         public static string ParseStampNameFromIncidentName(string incidentName)
         {
+            if (String.IsNullOrEmpty(incidentName))
+            {
+                throw new ArgumentNullException("Incident name");
+            }
+
             int stampNameLength = 17; // standard length of stamp name for stamps in format waws-prod-xx#-###
             if (incidentName.Contains("euap", StringComparison.OrdinalIgnoreCase))
             {
