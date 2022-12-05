@@ -18,7 +18,6 @@ namespace IncidentAnalyzerFunction
 {
     public static class Function1
     {
-        // note: look into changing the authorization level
         [FunctionName("Function1")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
