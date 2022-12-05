@@ -26,8 +26,8 @@ namespace IncidentAnalyzerFunction
         {
             try
             {
-                string stampName = ParseStampNameFromIncidentName(req.Query["stampName"]);
-                string startTime = req.Query["startTime"];
+                string stampName = ParseStampNameFromIncidentName(req.Query["incidentName"]);
+                string startTime = ParseTimeStampFromIncidentName(req.Query["incidentName"]);
                 log.LogInformation($"stampname is {stampName}");
                 log.LogInformation($"starttime is {startTime}");
 
@@ -72,6 +72,12 @@ namespace IncidentAnalyzerFunction
 
             int start = incidentName.IndexOf("waws");
             return incidentName.Substring(start, stampNameLength);
+        }
+
+        public static string ParseTimeStampFromIncidentName(string incidentName)
+        {
+            int startIndex = incidentName.IndexOf("StartTime:") + "StartTime:".Length;
+            return incidentName.Substring(startIndex).Trim();
         }
     }
 }
