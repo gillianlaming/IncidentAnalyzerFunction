@@ -25,17 +25,19 @@ namespace IncidentAnalyzerFunction
         private string _outputFile;
         public string OutputFilePath;
         public bool IsRunning = false;
+        public IncidentType KindOfIncident;
 
         public AutoTriager()
         {
 
         }
 
-        public AutoTriager(string stampName, string startTime)
+        public AutoTriager(string stampName, string startTime, IncidentType incidentType)
         {
             GetInputsAndInitializeContext(stampName, startTime);
             _outputFile = "Output" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + ".txt";
             OutputFilePath = Path.Combine(@"c:\home\LogFiles", _outputFile);
+            KindOfIncident = incidentType;
         }
 
         public void Run()
@@ -57,13 +59,21 @@ namespace IncidentAnalyzerFunction
                     Console.WriteLine(e.Message);
                     return;
                 }
+
                 Console.SetOut(writer);
 
                 // Run the following two queries synchronously to ensure output is formatted properly
                 GetStampInformation();
                 GetRecentDeploymentInformation();
 
-                RunTests();
+                if (KindOfIncident == IncidentType.CanaryTwoPercent)
+                {
+                    RunTestsForCanaryTwoPercent();
+                }
+                else if (KindOfIncident == IncidentType.RunnersHotsite)
+                {
+                    RunTestsForRunnersHotsite();
+                }
 
                 ListTestsRunAndRevealResults();
 
@@ -129,15 +139,21 @@ namespace IncidentAnalyzerFunction
 
         #region Orchestration Methods
 
-        private async void RunTests()
+        private async void RunTestsForCanaryTwoPercent()
         {
             Console.WriteLine("\nRunning tests......");
 
             Task.WaitAll(TestFor503_65(),
                          TestForSpikeInFrontEndTraffic(),
                          TestForStorageIssue(),
-                         TestSpikeInFrontEndErrors(),
-                         TestForProblemWorkersForSLASites());
+                         TestSpikeInFrontEndErrors());
+        }
+
+        private async void RunTestsForRunnersHotsite()
+        {
+            Console.WriteLine("\nRunning tests......");
+
+            Task.WaitAll(TestForProblemWorkersForSLASites());
         }
 
         private void ListTestsRunAndRevealResults()
@@ -631,5 +647,11 @@ namespace IncidentAnalyzerFunction
         }
 
         #endregion
+
+        public enum IncidentType
+        {
+            CanaryTwoPercent,
+            RunnersHotsite
+        }
     }
 }
