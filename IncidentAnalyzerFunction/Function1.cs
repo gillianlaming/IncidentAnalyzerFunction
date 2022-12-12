@@ -26,8 +26,9 @@ namespace IncidentAnalyzerFunction
             try
             {
                 string stampName = ParseStampNameFromIncidentName(req.Query["incidentName"]);
-                string startTime = ParseTimeStampFromIncidentName(req.Query["incidentName"]);
-                string timeStamp = req.Query["timeStamp"];
+                //string startTime = ParseTimeStampFromIncidentName(req.Query["incidentName"]);
+                 
+                string startTime = req.Query["timeStamp"];
                 log.LogInformation($"stampname is {stampName}");
                 log.LogInformation($"starttime is {startTime}");
 
@@ -42,8 +43,6 @@ namespace IncidentAnalyzerFunction
                 string[] lines = File.ReadAllLines(autoTriager.OutputFilePath);
 
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine(timeStamp);
-                sb.Append("<br>");
                 
                 foreach (string line in lines)
                 {
@@ -83,10 +82,10 @@ namespace IncidentAnalyzerFunction
             return incidentName.Substring(start, stampNameLength);
         }
 
-        public static string ParseTimeStampFromIncidentName(string incidentName)
-        {
-            int startIndex = incidentName.IndexOf("StartTime:") + "StartTime:".Length;
-            return incidentName.Substring(startIndex).Trim();
-        }
+        //public static string ParseTimeStampFromIncidentName(string incidentName)
+        //{
+        //    int startIndex = incidentName.IndexOf("StartTime:") + "StartTime:".Length;
+        //    return incidentName.Substring(startIndex).Trim();
+        //}
     }
 }
