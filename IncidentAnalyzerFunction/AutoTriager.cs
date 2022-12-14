@@ -35,7 +35,7 @@ namespace IncidentAnalyzerFunction
         public AutoTriager(string stampName, string startTime, IncidentType incidentType)
         {
             GetInputsAndInitializeContext(stampName, startTime);
-            _outputFile = "Output" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + ".txt";
+            _outputFile = "Output" + Guid.NewGuid() + ".txt";
             OutputFilePath = Path.Combine(@"c:\home\LogFiles", _outputFile);
             KindOfIncident = incidentType;
         }
@@ -250,6 +250,10 @@ namespace IncidentAnalyzerFunction
                 {
                     Console.WriteLine("No recent deployments found");
                 }
+                else
+                {
+                    ActionSuggestions.Add("We detected a recent deployment on this stamp. Please investigate if this incident could have been caused by the deployment.");
+                }
             }
             catch (Exception ex)
             {
@@ -266,7 +270,7 @@ namespace IncidentAnalyzerFunction
         {
             try
             {
-                TestCase tc = new TestCase("TestFor503_65");
+                TestCase tc = new TestCase("TestFor503_65:NotEnoughWorkersAvailable");
                 int countOf503_65 = 0;
 
                 string query = KustoQueries.NoAvailableWorkersQuery(Context.StampName, Context.StartTime, Context.EndTime);
@@ -293,7 +297,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Console.WriteLine("There was a query failure when running TestFor503_65");
+                Console.WriteLine("There was a query failure when running TestFor503_65:NotEnoughWorkersAvailable");
             }
         }
 

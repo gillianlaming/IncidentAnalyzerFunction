@@ -42,7 +42,7 @@ namespace IncidentAnalyzerFunction
         // NOTE: needs to be in sync with ResultCode.ValueToDescriptionDictionary
         public Dictionary<string, int> TestNameToResultCodeDict = new Dictionary<string, int>()
         {
-            { "TestFor503_65", 1},
+            { "TestFor503_65:NotEnoughWorkersAvailable", 1},
             { "TestForSpikeInFrontEndTraffic", 2 },
             { "TestSpikeInFrontEndErrors", 3 },
             { "TestTrafficSpikeForSpecificHost", 4 },

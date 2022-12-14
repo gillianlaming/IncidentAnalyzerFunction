@@ -16,10 +16,10 @@ using System.Text;
 
 namespace IncidentAnalyzerFunction
 {
-    public static class Function1
+    public class Function1
     {
         [FunctionName("Function1")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
@@ -54,7 +54,7 @@ namespace IncidentAnalyzerFunction
                 sb.Append("<br>");
                 sb.AppendLine("To manually run this query, please click the below link (you can change the timeStamp):");
                 sb.Append("<br>");
-                sb.AppendLine($"https://incidentanalyzer-staging.azurewebsites.net/api/Function1?incidentName={stampName}&timeStamp={startTime}");
+                sb.AppendLine($"https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}&timeStamp={startTime}");
 
                 string responseMessage = sb.ToString();
                 return new OkObjectResult(responseMessage);
@@ -67,7 +67,7 @@ namespace IncidentAnalyzerFunction
             
         }
 
-        public static string ParseStampNameFromIncidentName(string incidentName)
+        public string ParseStampNameFromIncidentName(string incidentName)
         {
             if (String.IsNullOrEmpty(incidentName))
             {
