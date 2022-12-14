@@ -51,11 +51,11 @@ namespace IncidentAnalyzerFunction
                     sb.Append("<br>");
                 }
                 sb.Append("<br>");
-                sb.Append("-----------------Finishing Auto Triage-----------------");
+                sb.AppendLine("-----------------Finishing Auto Triage-----------------");
                 sb.Append("<br>");
-                sb.Append("To manually run this query, please click the below link (you can change the timeStamp):");
+                sb.AppendLine("To manually run this query, please click the below link (you can change the timeStamp):");
                 sb.Append("<br>");
-                sb.Append($"https://incidentanalyzer-staging.azurewebsites.net/api/Function1?incidentName={stampName}&timeStamp={startTime}");
+                sb.AppendLine($"https://incidentanalyzer-staging.azurewebsites.net/api/Function1?incidentName={stampName}&timeStamp={startTime}");
 
                 string responseMessage = sb.ToString();
                 return new OkObjectResult(responseMessage);
