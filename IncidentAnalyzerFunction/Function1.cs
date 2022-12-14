@@ -50,8 +50,8 @@ namespace IncidentAnalyzerFunction
                     sb.AppendLine(line);
                     sb.Append("<br>");
                 }
-
-                sb.Append("--------------Finish Auto Triage---------------");
+                sb.Append("<br>");
+                sb.Append("-----------------Finishing Auto Triage-----------------");
                 sb.Append("<br>");
                 sb.Append("To manually run this query, please click the below link (you can change the timeStamp):");
                 sb.Append("<br>");
