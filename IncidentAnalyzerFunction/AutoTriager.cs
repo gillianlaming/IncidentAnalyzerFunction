@@ -63,6 +63,9 @@ namespace IncidentAnalyzerFunction
                 Console.SetOut(writer);
 
                 // Run the following two queries synchronously to ensure output is formatted properly
+
+                Console.WriteLine("Performing Incident Auto-Triage:");
+                Console.WriteLine();
                 GetStampInformation();
                 GetRecentDeploymentInformation();
 
@@ -99,7 +102,7 @@ namespace IncidentAnalyzerFunction
             adjustedStartTime = adjustedStartTime.Subtract(TimeSpan.FromHours(1));
             DateTime adjustedEndTime = adjustedStartTime.Add(TimeSpan.FromHours(2));
 
-           Context = new Context(stampName, adjustedStartTime.ToString(), adjustedEndTime.ToString(), "", "");
+            Context = new Context(stampName, adjustedStartTime.ToString(), adjustedEndTime.ToString(), "", "");
             
             KustoConnectionStringBuilder connectionString = Context.GetKustoConnectionString();
             KustoClient = KustoClientFactory.CreateCslQueryProvider(connectionString);
