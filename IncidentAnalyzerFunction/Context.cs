@@ -25,39 +25,62 @@ namespace IncidentAnalyzerFunction
         public Dictionary<string, string> ClusterDictionary = new Dictionary<string, string>()
         {
             { "am2", "wawsweu" },
-            { "blu", "wawseus" },
-            { "bn1", "wawseus" },
-            { "yq1", "wawseus" },
-            { "bm1", "wawseas" },
-            { "hk1", "wawseas" },
-            { "kw1", "wawseas" },
-            { "ma1", "wawseas" },
-            { "ml1", "wawseas" },
-            { "os1", "wawseas" },
-            { "pn1", "wawseas" },
-            { "sg1", "wawseas" },
-            { "sy1", "wawseas" },
-            { "ty1", "wawseas" },
-            { "ch1", "wawscus" },
-            { "cq1", "wawscus" },
-            { "cy4", "wawscus" },
-            { "dm1", "wawscus" },
-            { "sn1", "wawscus" },
-            { "yt1", "wawscus" },
-            { "db3", "wawsneu" },
-            { "ln1", "wawsneu" },
-            { "cw1", "wawsneu" },
             { "bay", "wawswus" },
-            { "par", "wawsweu" },
+            { "blu", "wawseus" },
+            { "bm1", "wawseas" },
+            { "bn1", "wawseus" },
+            { "brse", "wawscus" },
+            { "cbr20", "wawseas" },
+            { "cbr21", "wawseas" },
+            { "ch1", "wawscus" },
+            { "chw", "wawsweu" },
+            { "cpt20", "wawseas" },
+            { "cq1", "wawscus" },
+            { "cw1", "wawsneu" },
+            { "cy4", "wawscus" },
+            { "db3", "wawsneu" },
+            { "dm1", "wawscus" },
+            { "dxb", "wawseas" },
             { "euapbn1", "wawseus" },
             { "euapdm1", "wawscus" },
-            { "msftinthk1", "wawseas" },
+            { "fra", "wawsweu" },
+            { "hk1", "wawseas" },
+            { "jinc", "wawseas" },
+            { "jnb21", "wawseas" },
+            { "kw1", "wawseas" },
+            { "ln1", "wawsneu" },
+            { "ma1", "wawseas" },
+            { "ml1", "wawseas" },
+            { "mrs", "wawsweu" },
+            { "msftbay", "wawswus" },
+            { "msftblu", "wawseus" },
+            { "msftdb3", "wawsneu" },
+            { "msfthk1", "wawseas" },
             { "msftintch1", "wawseus"},
             { "msftintdm3", "wawscus" },
+            { "msftinthk1", "wawseas" },
             { "msftintsg1", "wawseas" },
-            { "dxb", "wawseas" },
+            { "msftintsn1", "wawscus" },
+            { "mwh", "wawswus" },
+            { "os1", "wawseas" },
+            { "osl", "wawsweu" },
+            { "par", "wawsweu" },
+            { "pn1", "wawseas" },
+            { "ps1", "wawseas" },
+            { "qac", "wawsneu" },
+            { "se1", "wawseas" },
+            { "sec", "wawsneu" },
+            { "ses", "wawsneu" },
+            { "sg1", "wawseas" },
+            { "sn1", "wawscus" },
+            { "svg", "wawsweu" },
             { "sy3", "wawseas" },
-            { "se1", "wawseas" }
+            { "ty1", "wawseas" },
+            { "usw3", "wawswus" },
+            { "xyz", "wawscus" },
+            { "yq1", "wawseus" },
+            { "yt1", "wawscus" },
+            { "zrh", "wawsweu" }
         };
 
         public Context(string stampName, string startTime, string endTime, string cluster, string database, string siteName = "")
@@ -107,21 +130,9 @@ namespace IncidentAnalyzerFunction
 
         private string GetStampLocationCode()
         {
-            string stampLocationCode;
-            if (StampName.Contains("euap"))
-            {
-                stampLocationCode = StampName.Substring(10, 7);
-            }
-            else if (StampName.Contains("msftint"))
-            {
-                stampLocationCode = StampName.Substring(10, 10);
-            }
-            else
-            {
-                stampLocationCode = StampName.Substring(10, 3);
-            }
+            string[] stampLocationParts = StampName.Split('-');
 
-            return stampLocationCode;
+            return stampLocationParts[2];
         }
 
         public KustoConnectionStringBuilder GetKustoConnectionString()
