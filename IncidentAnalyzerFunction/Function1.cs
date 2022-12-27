@@ -26,9 +26,13 @@ namespace IncidentAnalyzerFunction
             try
             {
                 string stampName = ParseStampNameFromIncidentName(req.Query["incidentName"]);
-                //string startTime = ParseTimeStampFromIncidentName(req.Query["incidentName"]);
-                 
                 string startTime = req.Query["timeStamp"];
+
+                if (string.IsNullOrEmpty(startTime))
+                {
+                    startTime = DateTime.UtcNow.ToString("s");
+                }
+
                 log.LogInformation($"stampname is {stampName}");
                 log.LogInformation($"starttime is {startTime}");
 
@@ -52,7 +56,7 @@ namespace IncidentAnalyzerFunction
                 sb.Append("<br>");
                 sb.AppendLine("-----------------Finishing Auto Triage-----------------");
                 sb.Append("<br>");
-                sb.AppendLine("To manually run this query, please click the below link (you can change the timeStamp):");
+                sb.AppendLine("To manually run this query, please click the below link (you can change the timeStamp or specify no timestamp to run for the current time):");
                 sb.Append("<br>");
                 sb.AppendLine($"https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}&timeStamp={startTime}");
 
@@ -84,14 +88,15 @@ namespace IncidentAnalyzerFunction
                 stampNameLength = 24;
             }
 
+            // TODO: add support for national clouds 
             int start = incidentName.IndexOf("waws");
+
+            if (start == -1)
+            {
+                throw new ArgumentException("Stamp name");
+            }
             return incidentName.Substring(start, stampNameLength);
         }
 
-        //public static string ParseTimeStampFromIncidentName(string incidentName)
-        //{
-        //    int startIndex = incidentName.IndexOf("StartTime:") + "StartTime:".Length;
-        //    return incidentName.Substring(startIndex).Trim();
-        //}
     }
 }

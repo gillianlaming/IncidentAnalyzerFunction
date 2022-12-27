@@ -186,12 +186,17 @@ namespace IncidentAnalyzerFunction
 
             Console.WriteLine("\n---------------------------------------------------------------------------------------");
 
-            if (isProblemFound)
+            if (ResultCodes.Count > 0)
             {
                 PrintResultCodes();
+            }
+
+            if (ActionSuggestions.Count > 0)
+            {
                 PrintActionSuggesions();
             }
-            else
+
+            if (!isProblemFound && ActionSuggestions.Count == 0)
             {
                 Console.WriteLine("\nThe investigation was inconclusive. Manual investigation is needed!");
             }
