@@ -50,7 +50,7 @@ namespace IncidentAnalyzerFunction
                 TextWriter oldOut = Console.Out;
                 try
                 {
-                    ostrm = new FileStream(OutputFilePath, FileMode.CreateNew, FileAccess.Write);
+                    ostrm = new FileStream(OutputFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
                     writer = new StreamWriter(ostrm);
                 }
                 catch (Exception e)
@@ -83,7 +83,6 @@ namespace IncidentAnalyzerFunction
                 Console.SetOut(oldOut);
                 writer.Close();
                 ostrm.Close();
-                Console.WriteLine("Done");
             }
             catch (Exception ex)
             {
