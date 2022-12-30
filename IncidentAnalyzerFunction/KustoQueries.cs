@@ -93,6 +93,39 @@ namespace IncidentAnalyzerFunction
                                 endTIme);
         }
 
+        public static string GetAntaresSubscriptionForStamp(string stampName)
+        {
+            return string.Format(@"AntaresConfigurationTracking
+                                    | where TIMESTAMP > ago(7d) 
+                                    | where EventPrimaryStampName == '{0}' and ConfigurationName ==""ConfigObj-RdfeSubscriptionId""
+                                    | take 1 
+                                    | project ConfigurationValue",
+                                    stampName);
+
+        }
+
+        public static string GetAzureStorageAccountName(string subId, string startTime)
+        {
+            return string.Format(@"let _AntaresStorageAccounts=cluster(""XStore.kusto.windows.net"").database(""xstore"").XStoreAccountPropertiesHourly
+                            | where TimePeriod between (datetime('{0}')..3h)
+                            | where Subscription == '{1}' 
+                            | summarize  by Account, StorageCluster=Tenant, IsPrimaryReplica, Redundancy, AccessTier, BillingType, BillingVersion, MigrationStage, IsAZConstrained, Subscription
+                            | parse Account with StorageAccount "";"" *
+                            | project-away Account, IsAZConstrained, MigrationStage, BillingVersion
+                            | order by IsPrimaryReplica desc;
+                            let SiteContentStorageAccountOldStyle=toscalar(
+                            _AntaresStorageAccounts
+                            | where StorageAccount startswith ""wawsstorage""
+                            | summarize by StorageAccountOldStyle=StorageAccount);
+                            _AntaresStorageAccounts
+                            | where StorageAccount startswith ""waws"" or StorageAccount  startswith ""lwaws"" or StorageAccount startswith ""ant""
+                            | summarize SiteContentStorageAccountNewStyle=min(StorageAccount) 
+                            | extend StorageAccountForXDiskSiteContent=iif(isempty(SiteContentStorageAccountOldStyle), SiteContentStorageAccountNewStyle,SiteContentStorageAccountOldStyle)
+                            | summarize by StorageAccountForXDiskSiteContent",
+                            startTime,
+                            subId);
+        }
+
         public static string FrontEndTrafficSpikeQuery(string stampName, string startTime)
         { 
             return string.Format(@"AntaresIISLogFrontEndTable
@@ -219,6 +252,44 @@ namespace IncidentAnalyzerFunction
                                 | sort by count_ desc",
                                 startTime,
                                 stampName);
+        }
+
+        public static string HighlyCongestedSMBPoolQuery(string stampName, string startTime)
+        {
+            return string.Format(@"// FileServer experiencing High Levels of Congestion in SMB Pool for over 1 hour
+                                    // Smallest SMB Pool size in Prod is 40
+                                    let heavyCongestionThreshold=30;
+                                    let aggregationPeriod=5m;
+                                    let analysisWindowLength=120m;
+                                    let kustoDelaySkipPeriod=10m;
+                                    let roundedEndTime=bin(datetime({0})-kustoDelaySkipPeriod,aggregationPeriod);
+                                    let roundedStartTime=bin(roundedEndTime-analysisWindowLength, aggregationPeriod);
+                                    let dashboardStartTime=roundedStartTime-1h;
+                                    // Find roles with at least some hight level of congestion
+                                    let RolesWithHighCongestion=WadFilterEvents
+                                    | where TIMESTAMP between (roundedStartTime..roundedEndTime)
+                                    | where EventId in (1, 2)
+                                    | where EventStampType == ""Stamp""
+                                    | where EventPrimaryStampName =~ '{1}'
+                                    | extend BlockingThreadpoolActivity=CntCreates + CntQueryInformation + CntSetInformation + CntSetSecurity + CntQuerySecurity + CntQueryDirectory + CntCloses + CntCleanups
+                                    | summarize AvgPendingBlockingActivity=avgif(BlockingThreadpoolActivity, EventId==1), AvgCompletedBlockingActivity=avgif(BlockingThreadpoolActivity, EventId==2) by bin(TIMESTAMP, aggregationPeriod), EventPrimaryStampName, EventStampName, RoleInstance, DiskNumber
+                                    | summarize AvgCompletedBlockingActivity=sum(AvgCompletedBlockingActivity), AvgPendingBlockingActivity=sum(AvgPendingBlockingActivity) by TIMESTAMP, EventPrimaryStampName, EventStampName, RoleInstance
+                                    | where AvgPendingBlockingActivity > heavyCongestionThreshold
+                                    | distinct EventPrimaryStampName, EventStampName, RoleInstance;
+                                    // Filter out short spurious congestion
+                                    WadFilterEvents
+                                    | where TIMESTAMP between (roundedStartTime..roundedEndTime)
+                                    | where EventId in (1, 2)
+                                    | join kind=inner RolesWithHighCongestion on EventPrimaryStampName, EventStampName, RoleInstance
+                                    | extend BlockingThreadpoolActivity=CntCreates + CntQueryInformation + CntSetInformation + CntSetSecurity + CntQuerySecurity + CntQueryDirectory + CntCloses + CntCleanups
+                                    | summarize AvgPendingBlockingActivity=avgif(BlockingThreadpoolActivity, EventId==1), AvgCompletedBlockingActivity=avgif(BlockingThreadpoolActivity, EventId==2) by bin(TIMESTAMP, aggregationPeriod), EventPrimaryStampName, RoleInstance, DiskNumber
+                                    | summarize AvgCompletedBlockingActivity=sum(AvgCompletedBlockingActivity), AvgPendingBlockingActivity=sum(AvgPendingBlockingActivity) by TIMESTAMP, EventPrimaryStampName, RoleInstance
+                                    | extend HeavyPoolCongestion=iff(AvgPendingBlockingActivity > heavyCongestionThreshold, 1, 0)
+                                    | summarize HeavyCongestionCount=sum(HeavyPoolCongestion), SampleCount=count() by EventPrimaryStampName, RoleInstance
+                                    | extend CongestionDurationPercent = HeavyCongestionCount/SampleCount*100.0
+                                    | where (CongestionDurationPercent > 10)",
+                                    startTime,
+                                    stampName);
         }
     }
 }

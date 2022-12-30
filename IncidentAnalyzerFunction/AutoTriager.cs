@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Kusto.Cloud.Platform.Data;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Data.Net.Client;
@@ -48,7 +49,6 @@ namespace IncidentAnalyzerFunction
                 IsRunning = true;
                 FileStream ostrm;
                 
-                TextWriter oldOut = Console.Out;
                 try
                 {
                     ostrm = new FileStream(OutputFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
@@ -60,8 +60,6 @@ namespace IncidentAnalyzerFunction
                     Console.WriteLine(e.Message);
                     return;
                 }
-
-                //Console.SetOut(writer);
 
                 Writer.WriteLine("Performing Incident Auto-Triage:");
                 Writer.WriteLine();
@@ -81,7 +79,6 @@ namespace IncidentAnalyzerFunction
 
                 ListTestsRunAndRevealResults();
 
-                //Console.SetOut(oldOut);
                 Writer.Close();
                 ostrm.Close();
             }
@@ -138,6 +135,28 @@ namespace IncidentAnalyzerFunction
             }
         }
 
+        private async Task<string> GetAzureStorageAccountName()
+        {
+            string subscriptionId = "", storageAccountName = "";
+            string subscriptionQuery = KustoQueries.GetAntaresSubscriptionForStamp(Context.StampName);
+            IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, subscriptionQuery, Properties);
+
+            while (r.Read())
+            {
+                subscriptionId = r[0].ToString();
+            }
+
+            string storageAccountQuery = KustoQueries.GetAzureStorageAccountName(subscriptionId, Context.StartTime);
+            r = await KustoClient.ExecuteQueryAsync(Context.Database, storageAccountQuery, Properties);
+
+            while (r.Read())
+            {
+                storageAccountName = r[0].ToString();
+            }
+
+            return storageAccountName;
+        }
+
         #endregion
 
         #region Orchestration Methods
@@ -149,7 +168,8 @@ namespace IncidentAnalyzerFunction
             Task.WaitAll(TestFor503_65(),
                          TestForSpikeInFrontEndTraffic(),
                          TestForStorageIssue(),
-                         TestSpikeInFrontEndErrors());
+                         TestSpikeInFrontEndErrors(),
+                         TestForCongestedSMBPool());
         }
 
         private async void RunTestsForRunnersHotsite()
@@ -287,11 +307,11 @@ namespace IncidentAnalyzerFunction
                     countOf503_65 = Int32.Parse(r[0].ToString());
                 }
 
-                if (countOf503_65 > 0)
+                if (countOf503_65 > 50)
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
-                    tc.ResultMessage.Add($"\n - There were {countOf503_65} 503.65 errors on the frontend were detected. Manual action to scale out the worker pool may be needed");
-                    tc.ActionSuggestions.Add("Scale out the worker pool for 503.65 errors");
+                    tc.ResultMessage.Add($"\n \t - There were {countOf503_65} 503.65 errors on the frontend were detected. Manual action to scale out the worker pool may be needed");
+                    tc.ActionSuggestions.Add("\t - Scale out the worker pool for 503.65 errors");
                 }
                 else
                 {
@@ -332,7 +352,7 @@ namespace IncidentAnalyzerFunction
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
                     tc.ResultMessage.Add("\n - There was a major spike in frontend traffic. This could be a DDOS attack.");
-                    tc.ActionSuggestions.Add("\n Investigate the spike in traffic, and if it is a DDOS attack, take appropriate action. It might self-heal in a few minutes.");
+                    tc.ActionSuggestions.Add("\t - Investigate the spike in traffic, and if it is a DDOS attack, take appropriate action. It might self-heal in a few minutes.");
                 }
                 else
                 {
@@ -457,7 +477,7 @@ namespace IncidentAnalyzerFunction
                     if (isFileServerReadSlow && isFileServerWriteSlow && fileServerSlowRead.Item1 == fileServerSlowWrite.Item1)
                     {
                         sb.Append($"\n - The slowest read and write were colocated on the same file server. We suggest you reboot {fileServerSlowRead.Item1}");
-                        tc.ActionSuggestions.Add($"Reboot the file server {fileServerSlowRead.Item1}");
+                        tc.ActionSuggestions.Add($"\t - Reboot the file server {fileServerSlowRead.Item1}");
                     }
 
                     tc.ResultMessage.Add(sb.ToString());
@@ -483,9 +503,7 @@ namespace IncidentAnalyzerFunction
                 //bool azureStorageIssue = false;
 
                 TestCase tc = new TestCase("TestForAzureStorageIssue");
-
                 string query = KustoQueries.AzureStorageErrorQuery(Context.StampName, Context.StartTime, Context.EndTime);
-
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
 
                 Dictionary<string, string> errorAndCount = new Dictionary<string, string>();
@@ -500,23 +518,28 @@ namespace IncidentAnalyzerFunction
 
                 if (errorAndCount.Count > 0)
                 {
+                    // TODO: once xstore team has authorized the MI, uncomment this to test
+                    string storageAccountName = ""; //await GetAzureStorageAccountName();
+
                     //azureStorageIssue = true;
                     tc.Result = TestCase.TestResult.ProblemDetected;
-                    tc.ResultMessage.Add("\n  -  Azure Storage side problem deteced.");
+                    string result = "\n \t - Azure Storage side problem deteced.";
                     foreach (KeyValuePair<string, string> kvp in errorAndCount)
                     {
-                        tc.ResultMessage.Add($"\n NtStatusInfo : {kvp.Key}, Count: {kvp.Value}");
+                        result += $"\n \t - NtStatusInfo : {kvp.Key}, Count: {kvp.Value}";
                     }
 
-                    tc.ResultMessage.Add("\n - We suggest you request assistance from XStore team (XStore/Triage).");
-                    tc.ActionSuggestions.Add("\n Request assistance from XStore team (XStore/Triage).");
+                    result += "\n \t - We suggest you request assistance from XStore team (XStore/Triage).";
+
+                    tc.ResultMessage.Add(result);
+                    tc.ActionSuggestions.Add($"\t - Request assistance from XStore team (XStore/Triage).");
                 }
 
                 TestsRun.Add(tc);
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when running TestForAzureStorageIssue");
+                Writer.WriteLine($"There was a query failure when running TestForAzureStorageIssue: {ex.ToString()}");
             }
         }
 
@@ -544,7 +567,7 @@ namespace IncidentAnalyzerFunction
                 }
                 else
                 {
-                    result = $"\n - We detected high traffic from the following hostnames at the following time {scopedContext.StartTime}";
+                    result = $"\n \t - We detected high traffic from the following hostnames at the following time {scopedContext.StartTime}";
                     foreach (var item in resultSet)
                     {
                         result += $"\n \t Hostname {item.Key}   Max number of requests {item.Value}";
@@ -615,6 +638,55 @@ namespace IncidentAnalyzerFunction
             catch (Exception ex)
             {
                 Writer.WriteLine("There was a query failure when running TestSpikeInFrontEndErrors");
+            }
+        }
+
+        private async Task TestForCongestedSMBPool()
+        {
+            try
+            {
+                TestCase tc = new TestCase("TestForCongestedSMBPool");
+
+                // During initialization, we adjusted the start time by an hour
+                // Add that time back so we have the exact time passed through on execution
+                DateTime adjustedStartTime = Convert.ToDateTime(Context.StartTime).Add(TimeSpan.FromHours(1));
+                string query = KustoQueries.HighlyCongestedSMBPoolQuery(Context.StampName, adjustedStartTime.ToString());
+                IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
+                string result = "";
+                string fileServersToReboot = "";
+                while (r.Read())
+                {
+                    result += $"\n \t - Detecting SMB pool congestion on {r[1]}";
+                    fileServersToReboot += $" {r[1]}";
+                    tc.Result = TestCase.TestResult.ProblemDetected;
+                }
+
+                if (tc.Result == TestCase.TestResult.ProblemDetected)
+                {
+                    tc.ResultMessage.Add(result);
+                    tc.ActionSuggestions.Add($"\t - SMB pool congestion identified, we suggest rebooting the following fileservers:{fileServersToReboot}");
+                }
+                else
+                {
+                    result = "";
+                }
+
+                if (!TestsRun.Contains(tc))
+                {
+                    TestsRun.Add(tc);
+                }
+                else
+                {
+                    TestCase preexistingTestCase = TestsRun.FirstOrDefault(testCase => testCase.TestName == tc.TestName);
+                    if (preexistingTestCase != null)
+                    {
+                        preexistingTestCase.ResultMessage.Add(result);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Writer.WriteLine("There was a query failure when running TestForCongestedSMBPool");
             }
         }
 

@@ -49,7 +49,8 @@ namespace IncidentAnalyzerFunction
             { "TestForAzureStorageIssue", 5 },
             { "TestForStorageIssue", 6 },
             { "TestForFileServerIssue", 7 },
-            { "TestForProblemWorkersForSLASites", 8 }
+            { "TestForProblemWorkersForSLASites", 8 },
+            { "TestForCongestedSMBPool", 9 }
         };
 
         public TestCase(string testName)

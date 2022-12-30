@@ -21,7 +21,8 @@ namespace IncidentAnalyzerFunction
             { 5, "AzureStorageIssue" },
             { 6, "GeneralStorageIssue" },
             { 7, "FileServerIssue" },
-            { 8, "WorkerErrorsForSLASites" }
+            { 8, "WorkerErrorsForSLASites" },
+            { 9, "TestForCongestedSMBPool" }
         };
 
         public ResultCode(int value)
