@@ -286,8 +286,8 @@ namespace IncidentAnalyzerFunction
                                     | summarize AvgCompletedBlockingActivity=sum(AvgCompletedBlockingActivity), AvgPendingBlockingActivity=sum(AvgPendingBlockingActivity) by TIMESTAMP, EventPrimaryStampName, RoleInstance
                                     | extend HeavyPoolCongestion=iff(AvgPendingBlockingActivity > heavyCongestionThreshold, 1, 0)
                                     | summarize HeavyCongestionCount=sum(HeavyPoolCongestion), SampleCount=count() by EventPrimaryStampName, RoleInstance
-                                    | extend CongestionDurationPercent = HeavyCongestionCount/SampleCount*100.0
-                                    | where (CongestionDurationPercent > 10)",
+                                    | extend CongestionDurationPercent = (todouble(HeavyCongestionCount)/SampleCount)*100.0
+                                    | where (CongestionDurationPercent > 40)",
                                     startTime,
                                     stampName);
         }
