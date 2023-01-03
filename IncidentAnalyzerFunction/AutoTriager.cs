@@ -352,7 +352,7 @@ namespace IncidentAnalyzerFunction
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
                     tc.ResultMessage.Add("\n - There was a major spike in frontend traffic. This could be a DDOS attack.");
-                    tc.ActionSuggestions.Add("\t - Investigate the spike in traffic, and if it is a DDOS attack, take appropriate action. It might self-heal in a few minutes.");
+                    tc.ActionSuggestions.Add("\t - Investigate the spike in traffic, and if it is a DDOS attack, take appropriate action. It might self-heal in a few minutes. \n DDOS dashboard: https://portal.microsoftgeneva.com/dashboard/CNS/DDoSSflowCountersProd/Main");
                 }
                 else
                 {
