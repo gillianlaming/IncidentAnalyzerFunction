@@ -50,15 +50,34 @@ namespace IncidentAnalyzerFunction
                 
                 foreach (string line in lines)
                 {
-                    sb.AppendLine(line);
+                    string formattedLine = line;
+
+                    if (line.Contains("Passed", StringComparison.OrdinalIgnoreCase) || line.Contains("True", StringComparison.OrdinalIgnoreCase))
+                    {
+                        formattedLine = FormatLine(line, LineFormat.Passed);
+                    }
+                    else if (line.Contains("ProblemDetected", StringComparison.OrdinalIgnoreCase))
+                    {
+                        formattedLine = FormatLine(line, LineFormat.ProblemDetected);
+                    }
+                    else if (line.StartsWith("--"))
+                    {
+                        formattedLine = FormatLine(line, LineFormat.Heading);
+                    }
+                    else if (line.StartsWith("Incident"))
+                    {
+                        formattedLine = FormatLine(line, LineFormat.Title);
+                    }
+
+                    sb.AppendLine(formattedLine);
                     sb.Append("<br>");
                 }
+
                 sb.Append("<br>");
-                sb.AppendLine("-----------------Finishing Auto Triage-----------------");
-                sb.Append("<br>");
-                sb.AppendLine("To manually run this query, please click the below link (you can change the timeStamp or specify no timestamp to run for the current time):");
-                sb.Append("<br>");
-                sb.AppendLine($"https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}&timeStamp={startTime}");
+                sb.AppendLine("<h1 style='font-size:15px;'> ----------------------------Finishing Auto Triage-----------------</h1><br>");
+                sb.AppendLine("To re-run AutoTriage, please click one of the below links:<br>");
+                sb.AppendLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}&timeStamp={startTime}' target = \"_blank\"> Re-Run AutoTriage for incident start time </a><br>");
+                sb.AppendLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}' target = \"_blank\"> Re-Run AutoTriage for current time </a>");
 
                 string responseMessage = sb.ToString();
                 return new OkObjectResult(responseMessage);
@@ -69,6 +88,28 @@ namespace IncidentAnalyzerFunction
                 return new OkObjectResult($"Encountered exception {ex.ToString()}");
             }
             
+        }
+
+        private string FormatLine(string line, LineFormat lineFormat)
+        {
+            if (lineFormat == LineFormat.Passed)
+            {
+                line = "<p style='color:green;'>" + line + "</p>";
+            }
+            else if (lineFormat == LineFormat.ProblemDetected)
+            {
+                line = "<p style='color:red;'>" + line + "</p>";
+            }
+            else if (lineFormat == LineFormat.Heading)
+            {
+                line = "<h1 style='font-size:19px;'>" + line + "</h1>";
+            }
+            else if (lineFormat == LineFormat.Title)
+            {
+                line = "<h1 style='font-size:30px; color:blue;'>" + line + "</h1>";
+            }
+
+            return line;
         }
 
         public string ParseStampNameFromIncidentName(string incidentName)
@@ -96,6 +137,14 @@ namespace IncidentAnalyzerFunction
                 throw new ArgumentException("Stamp name");
             }
             return incidentName.Substring(start, stampNameLength);
+        }
+
+        public enum LineFormat
+        {
+            Passed,
+            ProblemDetected,
+            Heading,
+            Title
         }
 
     }

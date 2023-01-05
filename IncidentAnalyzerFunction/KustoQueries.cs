@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Identity.Client.Extensions.Msal;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
@@ -93,37 +94,17 @@ namespace IncidentAnalyzerFunction
                                 endTIme);
         }
 
-        public static string GetAntaresSubscriptionForStamp(string stampName)
+        public static string GetAzureStorageAccountName(string stampName)
         {
-            return string.Format(@"AntaresConfigurationTracking
-                                    | where TIMESTAMP > ago(7d) 
-                                    | where EventPrimaryStampName == '{0}' and ConfigurationName ==""ConfigObj-RdfeSubscriptionId""
-                                    | take 1 
-                                    | project ConfigurationValue",
+            return string.Format(@"AntaresCostAnalysisEvents
+                                    | where TIMESTAMP > ago(1d)
+                                    | where EventPrimaryStampName == '{0}'
+                                    | where ResourceType contains 'storage'
+                                    | distinct ResourceId
+                                    | parse ResourceId with * 'storageaccounts/' storageAccountName
+                                    | project storageAccountName
+                                    | where storageAccountName startswith 'wawsstorage'",
                                     stampName);
-
-        }
-
-        public static string GetAzureStorageAccountName(string subId, string startTime)
-        {
-            return string.Format(@"let _AntaresStorageAccounts=cluster(""XStore.kusto.windows.net"").database(""xstore"").XStoreAccountPropertiesHourly
-                            | where TimePeriod between (datetime('{0}')..3h)
-                            | where Subscription == '{1}' 
-                            | summarize  by Account, StorageCluster=Tenant, IsPrimaryReplica, Redundancy, AccessTier, BillingType, BillingVersion, MigrationStage, IsAZConstrained, Subscription
-                            | parse Account with StorageAccount "";"" *
-                            | project-away Account, IsAZConstrained, MigrationStage, BillingVersion
-                            | order by IsPrimaryReplica desc;
-                            let SiteContentStorageAccountOldStyle=toscalar(
-                            _AntaresStorageAccounts
-                            | where StorageAccount startswith ""wawsstorage""
-                            | summarize by StorageAccountOldStyle=StorageAccount);
-                            _AntaresStorageAccounts
-                            | where StorageAccount startswith ""waws"" or StorageAccount  startswith ""lwaws"" or StorageAccount startswith ""ant""
-                            | summarize SiteContentStorageAccountNewStyle=min(StorageAccount) 
-                            | extend StorageAccountForXDiskSiteContent=iif(isempty(SiteContentStorageAccountOldStyle), SiteContentStorageAccountNewStyle,SiteContentStorageAccountOldStyle)
-                            | summarize by StorageAccountForXDiskSiteContent",
-                            startTime,
-                            subId);
         }
 
         public static string FrontEndTrafficSpikeQuery(string stampName, string startTime)

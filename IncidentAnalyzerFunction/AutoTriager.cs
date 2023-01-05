@@ -61,8 +61,7 @@ namespace IncidentAnalyzerFunction
                     return;
                 }
 
-                Writer.WriteLine("Performing Incident Auto-Triage:");
-                Writer.WriteLine();
+                Writer.WriteLine("Incident Auto-Triage Report:");
                 
                 // Run the following two queries synchronously to ensure output is formatted properly
                 GetStampInformation();
@@ -137,17 +136,9 @@ namespace IncidentAnalyzerFunction
 
         private async Task<string> GetAzureStorageAccountName()
         {
-            string subscriptionId = "", storageAccountName = "";
-            string subscriptionQuery = KustoQueries.GetAntaresSubscriptionForStamp(Context.StampName);
-            IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, subscriptionQuery, Properties);
-
-            while (r.Read())
-            {
-                subscriptionId = r[0].ToString();
-            }
-
-            string storageAccountQuery = KustoQueries.GetAzureStorageAccountName(subscriptionId, Context.StartTime);
-            r = await KustoClient.ExecuteQueryAsync(Context.Database, storageAccountQuery, Properties);
+            string storageAccountName = "";
+            string storageAccountQuery = KustoQueries.GetAzureStorageAccountName(Context.StampName);
+            IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, storageAccountQuery, Properties);
 
             while (r.Read())
             {
@@ -181,7 +172,7 @@ namespace IncidentAnalyzerFunction
 
         private void ListTestsRunAndRevealResults()
         {
-            Writer.WriteLine("\n\n-----------------Tests have completed. Please see your results below------------------\n");
+            Writer.WriteLine("\n\n----------------------------Tests have completed. Please see your results below------------------\n");
 
             Writer.WriteLine("Tests Run:\n");
             bool isProblemFound = false;
@@ -203,8 +194,6 @@ namespace IncidentAnalyzerFunction
                     ActionSuggestions.AddRange(tc.ActionSuggestions);
                 }
             }
-
-            Writer.WriteLine("\n---------------------------------------------------------------------------------------");
 
             if (ResultCodes.Count > 0)
             {
@@ -255,7 +244,7 @@ namespace IncidentAnalyzerFunction
         {
             try
             {
-                Writer.WriteLine("\n--------------------- Recent Deployments (past 5 days) -------------------\n");
+                Writer.WriteLine("\n----------------------------Recent Deployments (past 5 days) -------------------\n");
 
                 string query = KustoQueries.GetRecentDeploymentInformationQuery(Context.StampName, Context.StartTime);
                 IDataReader r = KustoClient.ExecuteQuery(query);
@@ -518,8 +507,7 @@ namespace IncidentAnalyzerFunction
 
                 if (errorAndCount.Count > 0)
                 {
-                    // TODO: once xstore team has authorized the MI, uncomment this to test
-                    string storageAccountName = ""; //await GetAzureStorageAccountName();
+                    string storageAccountName = await GetAzureStorageAccountName();
 
                     //azureStorageIssue = true;
                     tc.Result = TestCase.TestResult.ProblemDetected;
@@ -529,10 +517,10 @@ namespace IncidentAnalyzerFunction
                         result += $"\n \t - NtStatusInfo : {kvp.Key}, Count: {kvp.Value}";
                     }
 
-                    result += "\n \t - We suggest you request assistance from XStore team (XStore/Triage).";
+                    result += $"\n \t - We suggest you request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}";
 
                     tc.ResultMessage.Add(result);
-                    tc.ActionSuggestions.Add($"\t - Request assistance from XStore team (XStore/Triage).");
+                    tc.ActionSuggestions.Add($"\t - Request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}");
                 }
 
                 TestsRun.Add(tc);
