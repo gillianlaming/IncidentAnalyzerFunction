@@ -297,8 +297,8 @@ namespace IncidentAnalyzerFunction
                 if (countOf503_65 > 50)
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
-                    tc.ResultMessage.Add($"\n \t - There were {countOf503_65} 503.65 errors on the frontend were detected. Manual action to scale out the worker pool may be needed");
-                    tc.ActionSuggestions.Add("\t - Scale out the worker pool for 503.65 errors");
+                    tc.ResultMessage.Add($"\n \t - There were {countOf503_65} 503.65 errors on the frontend were detected. Manual action to scale out the worker pool may be needed.");
+                    tc.ActionSuggestions.Add("\t - Scale out the worker pool for 503.65 errors. \n Scaling instructions: https://microsoft.sharepoint.com/teams/Antares/_layouts/OneNote.aspx?id=%2Fteams%2FAntares%2FShared%20Documents%2FAntares%20Feature%20Crew&wd=target%28VMSS.one%7CBCC6352F-9470-4187-82B4-0854365710F0%2FScaling%20in%20Vmss%7C3DD5048D-ADA3-4A58-B33E-24A7CB6BAF98%2F%29");
                 }
                 else
                 {
