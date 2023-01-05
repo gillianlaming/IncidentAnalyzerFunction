@@ -68,13 +68,20 @@ namespace IncidentAnalyzerFunction
                     {
                         formattedLine = FormatLine(line, LineFormat.Title);
                     }
+                    else if (line.StartsWith("*"))
+                    {
+                        formattedLine = FormatLine(line, LineFormat.Result);
+                    }
+                    else
+                    {
+                        formattedLine += "<br>";
+                    }
 
                     sb.AppendLine(formattedLine);
-                    sb.Append("<br>");
                 }
 
                 sb.Append("<br>");
-                sb.AppendLine("<h1 style='font-size:15px;'> ----------------------------Finishing Auto Triage-----------------</h1><br>");
+                sb.AppendLine("<h1 style='font-size:19px;'> ----------------------------Finishing Auto Triage-----------------</h1><br>");
                 sb.AppendLine("To re-run AutoTriage, please click one of the below links:<br>");
                 sb.AppendLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}&timeStamp={startTime}' target = \"_blank\"> Re-Run AutoTriage for incident start time </a><br>");
                 sb.AppendLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}' target = \"_blank\"> Re-Run AutoTriage for current time </a>");
@@ -107,6 +114,10 @@ namespace IncidentAnalyzerFunction
             else if (lineFormat == LineFormat.Title)
             {
                 line = "<h1 style='font-size:30px; color:blue;'>" + line + "</h1>";
+            }
+            else if (lineFormat == LineFormat.Result)
+            {
+                line = "<p style='color:orange; font-size:20px'>" + line + "<br>";
             }
 
             return line;
@@ -144,7 +155,8 @@ namespace IncidentAnalyzerFunction
             Passed,
             ProblemDetected,
             Heading,
-            Title
+            Title,
+            Result
         }
 
     }

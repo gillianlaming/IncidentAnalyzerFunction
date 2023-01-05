@@ -62,10 +62,6 @@ namespace IncidentAnalyzerFunction
                 }
 
                 Writer.WriteLine("Incident Auto-Triage Report:");
-                
-                // Run the following two queries synchronously to ensure output is formatted properly
-                GetStampInformation();
-                GetRecentDeploymentInformation();
 
                 if (KindOfIncident == IncidentType.CanaryTwoPercent)
                 {
@@ -77,6 +73,9 @@ namespace IncidentAnalyzerFunction
                 }
 
                 ListTestsRunAndRevealResults();
+
+                GetStampInformation();
+                GetRecentDeploymentInformation();
 
                 Writer.Close();
                 ostrm.Close();
@@ -110,7 +109,7 @@ namespace IncidentAnalyzerFunction
         {
             if (ResultCodes.Count() != 0)
             {
-                Writer.WriteLine("\nResults summary:");
+                Writer.WriteLine("Results summary:");
             }
 
             // List of the result code and the description mapping
@@ -124,7 +123,7 @@ namespace IncidentAnalyzerFunction
         {
             if (ActionSuggestions.Count() != 0)
             {
-                Writer.WriteLine("\nAction suggestions:");
+                Writer.WriteLine("*Action suggestions:");
             }
 
             // List of the result code and the description mapping
@@ -154,8 +153,6 @@ namespace IncidentAnalyzerFunction
 
         private async void RunTestsForCanaryTwoPercent()
         {
-            Writer.WriteLine("\nRunning tests......");
-
             Task.WaitAll(TestFor503_65(),
                          TestForSpikeInFrontEndTraffic(),
                          TestForStorageIssue(),
@@ -165,24 +162,20 @@ namespace IncidentAnalyzerFunction
 
         private async void RunTestsForRunnersHotsite()
         {
-            Writer.WriteLine("\nRunning tests......");
-
             Task.WaitAll(TestForProblemWorkersForSLASites());
         }
 
         private void ListTestsRunAndRevealResults()
         {
-            Writer.WriteLine("\n\n----------------------------Tests have completed. Please see your results below------------------\n");
-
-            Writer.WriteLine("Tests Run:\n");
+            string testsRun = "\n";
             bool isProblemFound = false;
 
             // Sort the tests by which ones passed and which didn't to make the output pretty :-)
             TestsRun.Sort();
             foreach (TestCase tc in TestsRun)
             {
-                Writer.WriteLine(tc.ToString());
-
+                //Writer.WriteLine(tc.ToString());
+                testsRun += tc.ToString() + "\n";
                 if (tc.Code.Value != 0)
                 {
                     isProblemFound = true;
@@ -195,11 +188,7 @@ namespace IncidentAnalyzerFunction
                 }
             }
 
-            if (ResultCodes.Count > 0)
-            {
-                PrintResultCodes();
-            }
-
+            // Print action suggestions at the very top of the report
             if (ActionSuggestions.Count > 0)
             {
                 PrintActionSuggesions();
@@ -207,7 +196,16 @@ namespace IncidentAnalyzerFunction
 
             if (!isProblemFound && ActionSuggestions.Count == 0)
             {
-                Writer.WriteLine("\nThe investigation was inconclusive. Manual investigation is needed!");
+                Writer.WriteLine("*The investigation was inconclusive. Manual investigation is needed!");
+            }
+
+            Writer.WriteLine("----------------------------Tests have completed. Please see your results below------------------");
+
+            Writer.WriteLine(testsRun);
+
+            if (ResultCodes.Count > 0)
+            {
+                PrintResultCodes();
             }
         }
 
@@ -215,7 +213,7 @@ namespace IncidentAnalyzerFunction
         {
             try
             {
-                Writer.WriteLine("\n----------------------------Stamp Information-----------------------------------\n");
+                Writer.WriteLine("----------------------------Stamp Information-----------------------------------");
 
                 string query = KustoQueries.GetStampInformationQuery(Context.StampName);
 
@@ -244,7 +242,7 @@ namespace IncidentAnalyzerFunction
         {
             try
             {
-                Writer.WriteLine("\n----------------------------Recent Deployments (past 5 days) -------------------\n");
+                Writer.WriteLine("----------------------------Recent Deployments (past 5 days) -------------------");
 
                 string query = KustoQueries.GetRecentDeploymentInformationQuery(Context.StampName, Context.StartTime);
                 IDataReader r = KustoClient.ExecuteQuery(query);
