@@ -116,6 +116,64 @@ namespace IncidentAnalyzerFunction
             foreach (ResultCode code in ResultCodes)
             {
                 Writer.WriteLine(code.ToString());
+                PrintResultCodeKustoQueries(code.Value);
+                Writer.WriteLine("");
+            }
+        }
+
+        private void PrintResultCodeKustoQueries(int resultCodeValue)
+        {   //{ "TestFor503_65:NotEnoughWorkersAvailable", 1},
+            //{ "TestForSpikeInFrontEndTraffic", 2 },
+            //{ "TestSpikeInFrontEndErrors", 3 },
+            //{ "TestTrafficSpikeForSpecificHost", 4 },
+            //{ "TestForAzureStorageIssue", 5 },
+            //{ "TestForStorageIssue", 6 },
+            //{ "TestForFileServerIssue", 7 },
+            //{ "TestForProblemWorkersForSLASites", 8 },
+            //{ "TestForCongestedSMBPool", 9 }
+            if (resultCodeValue == 1)
+            {
+                Writer.WriteLine(KustoQueries.NoAvailableWorkersQuery(Context.StampName, Context.StartTime, Context.EndTime));
+            }
+
+            if (resultCodeValue == 2)
+            {
+                Writer.WriteLine(KustoQueries.FrontEndTrafficSpikeQuery(Context.StampName, Context.StartTime));
+            }
+
+            if (resultCodeValue == 3)
+            {
+                Writer.WriteLine(KustoQueries.FrontEndSpikesErrorQuery(Context.StampName, Context.StartTime));
+            }
+
+            if (resultCodeValue == 4)
+            {
+                Writer.WriteLine(KustoQueries.TrafficSpikeForSpecificHostQuery(Context.StampName, Context.StartTime));
+            }
+            
+            if (resultCodeValue == 5)
+            {
+                Writer.WriteLine(KustoQueries.AzureStorageErrorQuery(Context.StampName, Context.StartTime, Context.EndTime));
+            }
+
+            if (resultCodeValue == 6)
+            {
+                Writer.WriteLine(KustoQueries.StorageOverallAvaiabilityQuery(Context.StampName, Context.StartTime, Context.EndTime));
+            }
+
+            if (resultCodeValue == 7)
+            {
+                Writer.WriteLine(KustoQueries.FileServerRwLatencyQuery(Context.StampName, Context.StartTime, Context.EndTime));
+            }
+
+            if (resultCodeValue == 8)
+            {
+                Writer.WriteLine(KustoQueries.DetectErrorsOnWorkerForSLASites(Context.StampName, Context.StartTime));
+            }
+
+            if (resultCodeValue == 9)
+            {
+                Writer.WriteLine(KustoQueries.HighlyCongestedSMBPoolQuery(Context.StampName, Context.StartTime));
             }
         }
 
@@ -509,7 +567,7 @@ namespace IncidentAnalyzerFunction
 
                     //azureStorageIssue = true;
                     tc.Result = TestCase.TestResult.ProblemDetected;
-                    string result = "\n \t - Azure Storage side problem deteced.";
+                    string result = "\n \t - Azure Storage side problem detected.";
                     foreach (KeyValuePair<string, string> kvp in errorAndCount)
                     {
                         result += $"\n \t - NtStatusInfo : {kvp.Key}, Count: {kvp.Value}";

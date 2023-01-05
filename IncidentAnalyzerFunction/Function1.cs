@@ -94,7 +94,6 @@ namespace IncidentAnalyzerFunction
                 log.LogInformation($"Encountered exception {ex.ToString()}");
                 return new OkObjectResult($"Encountered exception {ex.ToString()}");
             }
-            
         }
 
         private string FormatLine(string line, LineFormat lineFormat)
