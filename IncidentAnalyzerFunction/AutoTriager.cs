@@ -23,6 +23,7 @@ namespace IncidentAnalyzerFunction
         public List<ResultCode> ResultCodes = new List<ResultCode>();
         public ClientRequestProperties Properties = new ClientRequestProperties();
         public List<string> ActionSuggestions = new List<string>();
+        public List<DeploymentInfo> RecentDeployments = new List<DeploymentInfo>();
         private string _outputFile;
         public string OutputFilePath;
         public bool IsRunning = false;
@@ -75,8 +76,7 @@ namespace IncidentAnalyzerFunction
                 ListTestsRunAndRevealResults();
 
                 GetStampInformation();
-                GetRecentDeploymentInformation();
-
+                
                 Writer.Close();
                 ostrm.Close();
             }
@@ -109,7 +109,7 @@ namespace IncidentAnalyzerFunction
         {
             if (ResultCodes.Count() != 0)
             {
-                Writer.WriteLine("Results summary:");
+                Writer.WriteLine("----------------------------Results Summary and Queries-------------------------");
             }
 
             // List of the result code and the description mapping
@@ -207,7 +207,8 @@ namespace IncidentAnalyzerFunction
                          TestForSpikeInFrontEndTraffic(),
                          TestForStorageIssue(),
                          TestSpikeInFrontEndErrors(),
-                         TestForCongestedSMBPool());
+                         TestForCongestedSMBPool(),
+                         GetRecentDeploymentInformation());
         }
 
         private async void RunTestsForRunnersHotsite()
@@ -219,6 +220,7 @@ namespace IncidentAnalyzerFunction
         {
             string testsRun = "\n";
             bool isProblemFound = false;
+
 
             // Sort the tests by which ones passed and which didn't to make the output pretty :-)
             TestsRun.Sort();
@@ -257,6 +259,8 @@ namespace IncidentAnalyzerFunction
             {
                 PrintResultCodes();
             }
+
+            PrintRecentDeploymentInfo();
         }
 
         private void GetStampInformation()
@@ -288,31 +292,20 @@ namespace IncidentAnalyzerFunction
 
         }
 
-        private void GetRecentDeploymentInformation()
+        private async Task GetRecentDeploymentInformation()
         {
             try
             {
-                Writer.WriteLine("----------------------------Recent Deployments (past 5 days) -------------------");
-
                 string query = KustoQueries.GetRecentDeploymentInformationQuery(Context.StampName, Context.StartTime);
-                IDataReader r = KustoClient.ExecuteQuery(query);
+                IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
                 bool recentDeploymentsFound = false;
                 while (r.Read())
                 {
-                    recentDeploymentsFound = true;
-                    Writer.WriteLine("DeploymentId: \t" + r[0]);
-                    Writer.WriteLine("StartTime:    \t" + r[1]);
-                    Writer.WriteLine("EndTime:      \t" + r[2]);
-                    Writer.WriteLine("TemplateName: \t" + r[3]);
-                    Writer.WriteLine("Details:      \t" + r[4]);
-                    Writer.WriteLine();
+                    DeploymentInfo di = new DeploymentInfo(r[0].ToString(), r[1].ToString(), r[2].ToString(), r[3].ToString(), r[4].ToString());
+                    RecentDeployments.Add(di);
                 }
 
-                if (!recentDeploymentsFound)
-                {
-                    Writer.WriteLine("No recent deployments found");
-                }
-                else
+                if (RecentDeployments.Count > 0)
                 {
                     ActionSuggestions.Add("We detected a recent deployment on this stamp. Please investigate if this incident could have been caused by the deployment.");
                 }
@@ -322,6 +315,27 @@ namespace IncidentAnalyzerFunction
                 Writer.WriteLine("There was a query failure when getting recent deployments");
             }
 
+        }
+
+        private void PrintRecentDeploymentInfo()
+        {
+            Writer.WriteLine("----------------------------Recent Deployments (past 5 days) -------------------");
+
+            if (RecentDeployments.Count == 0)
+            {
+                Writer.WriteLine("No recent deployments found");
+                return;
+            }
+
+            foreach (var deployment in RecentDeployments)
+            {
+                Writer.WriteLine("DeploymentId: \t" + deployment.DeploymentId);
+                Writer.WriteLine("StartTime:    \t" + deployment.StartTime);
+                Writer.WriteLine("EndTime:      \t" + deployment.EndTime);
+                Writer.WriteLine("TemplateName: \t" + deployment.TemplateName);
+                Writer.WriteLine("Details:      \t" + deployment.Details);
+                Writer.WriteLine();
+            }
         }
 
         #endregion

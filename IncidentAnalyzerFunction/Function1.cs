@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using Microsoft.Azure.Services.AppAuthentication;
 using System.Text;
+using System.Net.Http;
 
 namespace IncidentAnalyzerFunction
 {
@@ -47,7 +48,7 @@ namespace IncidentAnalyzerFunction
                 string[] lines = File.ReadAllLines(autoTriager.OutputFilePath);
 
                 StringBuilder sb = new StringBuilder();
-                
+
                 foreach (string line in lines)
                 {
                     string formattedLine = line;
@@ -84,7 +85,10 @@ namespace IncidentAnalyzerFunction
                 sb.AppendLine("<h1 style='font-size:19px;'> ----------------------------Finishing Auto Triage-----------------</h1><br>");
                 sb.AppendLine("To re-run AutoTriage, please click one of the below links:<br>");
                 sb.AppendLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}&timeStamp={startTime}' target = \"_blank\"> Re-Run AutoTriage for incident start time </a><br>");
-                sb.AppendLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}' target = \"_blank\"> Re-Run AutoTriage for current time </a>");
+                sb.AppendLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}' target = \"_blank\"> Re-Run AutoTriage for current time </a><br>");
+
+                sb.AppendLine("<br> Did you encounter a bug with auto triage or have feedback? Report it");
+                sb.AppendLine($"<a href='https://forms.office.com/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR9yuUd7I4DxFkOM_Cds2QHpUMDFHSjlFNU82NkJCWFJWOVU3NUxFRzQ4NC4u' target = \"_blank\"> here </a><br>");
 
                 string responseMessage = sb.ToString();
                 return new OkObjectResult(responseMessage);
@@ -116,7 +120,7 @@ namespace IncidentAnalyzerFunction
             }
             else if (lineFormat == LineFormat.ReportResult)
             {
-                line = "<p style='color:orange; font-size:20px'>" + line + "<br>";
+                line = "<p style='color:orange; font-size:20px'>" + line + "</p>";
             }
 
             return line;
