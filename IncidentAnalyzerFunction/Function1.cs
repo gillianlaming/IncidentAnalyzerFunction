@@ -129,16 +129,6 @@ namespace IncidentAnalyzerFunction
                 throw new ArgumentNullException("Incident name");
             }
 
-            int stampNameLength = 17; // standard length of stamp name for stamps in format waws-prod-xx#-###
-            if (incidentName.Contains("euap", StringComparison.OrdinalIgnoreCase))
-            {
-                stampNameLength = 21;
-            }
-            else if (incidentName.Contains("msftint", StringComparison.OrdinalIgnoreCase))
-            {
-                stampNameLength = 24;
-            }
-
             // TODO: add support for national clouds 
             int start = incidentName.IndexOf("waws");
 
@@ -146,7 +136,15 @@ namespace IncidentAnalyzerFunction
             {
                 throw new ArgumentException("Stamp name");
             }
-            return incidentName.Substring(start, stampNameLength);
+
+            int end = start;
+
+            while (end < incidentName.Length && incidentName[end] != ' ')
+            {
+                end++;
+            }
+            
+            return incidentName.Substring(start, end - start);
         }
 
         public enum LineFormat
