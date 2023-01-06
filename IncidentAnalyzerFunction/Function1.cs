@@ -56,7 +56,7 @@ namespace IncidentAnalyzerFunction
                     {
                         formattedLine = FormatLine(line, LineFormat.Passed);
                     }
-                    else if (line.Contains("ProblemDetected", StringComparison.OrdinalIgnoreCase))
+                    else if (line.Contains("ProblemDetected", StringComparison.OrdinalIgnoreCase) || (line.Length > 0 && Char.IsDigit(line[0])))
                     {
                         formattedLine = FormatLine(line, LineFormat.ProblemDetected);
                     }
@@ -70,7 +70,7 @@ namespace IncidentAnalyzerFunction
                     }
                     else if (line.StartsWith("*"))
                     {
-                        formattedLine = FormatLine(line, LineFormat.Result);
+                        formattedLine = FormatLine(line, LineFormat.ReportResult);
                     }
                     else
                     {
@@ -114,7 +114,7 @@ namespace IncidentAnalyzerFunction
             {
                 line = "<h1 style='font-size:30px; color:blue;'>" + line + "</h1>";
             }
-            else if (lineFormat == LineFormat.Result)
+            else if (lineFormat == LineFormat.ReportResult)
             {
                 line = "<p style='color:orange; font-size:20px'>" + line + "<br>";
             }
@@ -155,7 +155,7 @@ namespace IncidentAnalyzerFunction
             ProblemDetected,
             Heading,
             Title,
-            Result
+            ReportResult
         }
 
     }

@@ -122,15 +122,7 @@ namespace IncidentAnalyzerFunction
         }
 
         private void PrintResultCodeKustoQueries(int resultCodeValue)
-        {   //{ "TestFor503_65:NotEnoughWorkersAvailable", 1},
-            //{ "TestForSpikeInFrontEndTraffic", 2 },
-            //{ "TestSpikeInFrontEndErrors", 3 },
-            //{ "TestTrafficSpikeForSpecificHost", 4 },
-            //{ "TestForAzureStorageIssue", 5 },
-            //{ "TestForStorageIssue", 6 },
-            //{ "TestForFileServerIssue", 7 },
-            //{ "TestForProblemWorkersForSLASites", 8 },
-            //{ "TestForCongestedSMBPool", 9 }
+        {
             if (resultCodeValue == 1)
             {
                 Writer.WriteLine(KustoQueries.NoAvailableWorkersQuery(Context.StampName, Context.StartTime, Context.EndTime));
