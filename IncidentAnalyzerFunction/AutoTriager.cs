@@ -62,7 +62,7 @@ namespace IncidentAnalyzerFunction
                     return;
                 }
 
-                Writer.WriteLine("Incident Auto-Triage Report:");
+                Writer.WriteLine(FormattingHelper.FormatTitle("Incident Auto-Triage Report:"));
 
                 if (KindOfIncident == IncidentType.CanaryTwoPercent)
                 {
@@ -82,7 +82,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("Hit Exception:\r\n{0}", ex.ToString());
+                Writer.WriteLine("Hit Exception:\r<br>{0}", ex.ToString());
             }
             finally
             {
@@ -109,13 +109,13 @@ namespace IncidentAnalyzerFunction
         {
             if (ResultCodes.Count() != 0)
             {
-                Writer.WriteLine("----------------------------Results Summary and Queries-------------------------");
+                Writer.WriteLine(FormattingHelper.FormatHeading("----------------------------Results Summary and Queries-------------------------"));
             }
 
             // List of the result code and the description mapping
             foreach (ResultCode code in ResultCodes)
             {
-                Writer.WriteLine(code.ToString());
+                Writer.WriteLine(FormattingHelper.FormatFailedTest(code.ToString()));
                 PrintResultCodeKustoQueries(code.Value);
                 Writer.WriteLine("");
             }
@@ -125,7 +125,7 @@ namespace IncidentAnalyzerFunction
         {
             if (resultCodeValue == 1)
             {
-                Writer.WriteLine(KustoQueries.NoAvailableWorkersQuery(Context.StampName, Context.StartTime, Context.EndTime));
+                Writer.WriteLine(KustoQueries.NoAvailableWorkersQuery(Context.StampName, Context.StartTime, Context.EndTime) + "<br>");
             }
 
             if (resultCodeValue == 2)
@@ -173,13 +173,13 @@ namespace IncidentAnalyzerFunction
         {
             if (ActionSuggestions.Count() != 0)
             {
-                Writer.WriteLine("*Action suggestions:");
+                Writer.WriteLine(FormattingHelper.FormatActionSuggestion("Action suggestions:"));
             }
 
             // List of the result code and the description mapping
             foreach (string actionSuggestion in ActionSuggestions)
             {
-                Writer.WriteLine(actionSuggestion);
+                Writer.WriteLine(FormattingHelper.FormatActionSuggestion(actionSuggestion));
             }
         }
 
@@ -218,7 +218,7 @@ namespace IncidentAnalyzerFunction
 
         private void ListTestsRunAndRevealResults()
         {
-            string testsRun = "\n";
+            string testsRun = "";
             bool isProblemFound = false;
 
 
@@ -226,12 +226,15 @@ namespace IncidentAnalyzerFunction
             TestsRun.Sort();
             foreach (TestCase tc in TestsRun)
             {
-                //Writer.WriteLine(tc.ToString());
-                testsRun += tc.ToString() + "\n";
                 if (tc.Code.Value != 0)
                 {
+                    testsRun += FormattingHelper.FormatFailedTest(tc.ToString());
                     isProblemFound = true;
                     ResultCodes.Add(tc.Code);
+                }
+                else
+                {
+                    testsRun += FormattingHelper.FormatPassedTest(tc.ToString());
                 }
 
                 if (tc.ActionSuggestions.Count() != 0)
@@ -248,10 +251,10 @@ namespace IncidentAnalyzerFunction
 
             if (!isProblemFound && ActionSuggestions.Count == 0)
             {
-                Writer.WriteLine("*The investigation was inconclusive. Manual investigation is needed!");
+                Writer.WriteLine(FormattingHelper.FormatActionSuggestion("The investigation was inconclusive. Manual investigation is needed!"));
             }
 
-            Writer.WriteLine("----------------------------Tests have completed. Please see your results below------------------");
+            Writer.WriteLine(FormattingHelper.FormatHeading("----------------------------Tests have completed. Please see your results below------------------"));
 
             Writer.WriteLine(testsRun);
 
@@ -267,7 +270,7 @@ namespace IncidentAnalyzerFunction
         {
             try
             {
-                Writer.WriteLine("----------------------------Stamp Information-----------------------------------");
+                Writer.WriteLine(FormattingHelper.FormatHeading("----------------------------Stamp Information-----------------------------------"));
 
                 string query = KustoQueries.GetStampInformationQuery(Context.StampName);
 
@@ -277,17 +280,25 @@ namespace IncidentAnalyzerFunction
                     string line = r[0].ToString();
                     for (int i = r[0].ToString().Length; i < 25; i++)
                     {
-                        line += " ";
+                        line += "&nbsp;";
                     }
-                    Writer.WriteLine(line + "\t" + r[1]);
+
+                    if (r[1].ToString().Contains("True", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Writer.Write(FormattingHelper.FormatPassedTest(line + r[1]));
+                    }
+                    else
+                    {
+                        Writer.Write(line + r[1] + "<br>");
+                    }
                 }
 
-                Writer.WriteLine($"\nCluster:  {Context.Cluster}");
-                Writer.WriteLine($"Database: {Context.Database}");
+                Writer.WriteLine($"<br> Cluster:  {Context.Cluster} <br>");
+                Writer.WriteLine($"Database: {Context.Database} <br>");
             }
             catch (Exception ex)
             {
-                Writer.WriteLine($"There was a query failure when getting recent deployments. {ex.ToString()}");
+                Writer.WriteLine($"There was a query failure when getting recent deployments. <br> {ex.ToString()} <br>");
             }
 
         }
@@ -312,28 +323,28 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when getting recent deployments");
+                Writer.WriteLine("There was a query failure when getting recent deployments <br>");
             }
 
         }
 
         private void PrintRecentDeploymentInfo()
         {
-            Writer.WriteLine("----------------------------Recent Deployments (past 5 days) -------------------");
+            Writer.WriteLine(FormattingHelper.FormatHeading("----------------------------Recent Deployments (past 5 days) -------------------"));
 
             if (RecentDeployments.Count == 0)
             {
-                Writer.WriteLine("No recent deployments found");
+                Writer.WriteLine("No recent deployments found <br>");
                 return;
             }
 
             foreach (var deployment in RecentDeployments)
             {
-                Writer.WriteLine("DeploymentId: \t" + deployment.DeploymentId);
-                Writer.WriteLine("StartTime:    \t" + deployment.StartTime);
-                Writer.WriteLine("EndTime:      \t" + deployment.EndTime);
-                Writer.WriteLine("TemplateName: \t" + deployment.TemplateName);
-                Writer.WriteLine("Details:      \t" + deployment.Details);
+                Writer.WriteLine("DeploymentId:  &emsp; " + deployment.DeploymentId + "<br>");
+                Writer.WriteLine("StartTime:     &emsp; " + deployment.StartTime + "<br>");
+                Writer.WriteLine("EndTime:       &emsp; " + deployment.EndTime + "<br>");
+                Writer.WriteLine("TemplateName:  &emsp; " + deployment.TemplateName + "<br>");
+                Writer.WriteLine("Details:       &emsp; " + deployment.Details + "<br>");
                 Writer.WriteLine();
             }
         }
@@ -361,8 +372,8 @@ namespace IncidentAnalyzerFunction
                 if (countOf503_65 > 50)
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
-                    tc.ResultMessage.Add($"\n \t - There were {countOf503_65} 503.65 errors on the frontend were detected. Manual action to scale out the worker pool may be needed.");
-                    tc.ActionSuggestions.Add("\t - Scale out the worker pool for 503.65 errors. \n Scaling instructions: https://microsoft.sharepoint.com/teams/Antares/_layouts/OneNote.aspx?id=%2Fteams%2FAntares%2FShared%20Documents%2FAntares%20Feature%20Crew&wd=target%28VMSS.one%7CBCC6352F-9470-4187-82B4-0854365710F0%2FScaling%20in%20Vmss%7C3DD5048D-ADA3-4A58-B33E-24A7CB6BAF98%2F%29");
+                    tc.ResultMessage.Add($"<br> &emsp; - There were {countOf503_65} 503.65 errors on the frontend were detected. Manual action to scale out the worker pool may be needed.");
+                    tc.ActionSuggestions.Add("&emsp; - Scale out the worker pool for 503.65 errors. &emsp Scaling instructions: https://microsoft.sharepoint.com/teams/Antares/_layouts/OneNote.aspx?id=%2Fteams%2FAntares%2FShared%20Documents%2FAntares%20Feature%20Crew&wd=target%28VMSS.one%7CBCC6352F-9470-4187-82B4-0854365710F0%2FScaling%20in%20Vmss%7C3DD5048D-ADA3-4A58-B33E-24A7CB6BAF98%2F%29");
                 }
                 else
                 {
@@ -373,7 +384,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when running TestFor503_65:NotEnoughWorkersAvailable");
+                Writer.WriteLine("There was a query failure when running TestFor503_65:NotEnoughWorkersAvailable <br>");
             }
         }
 
@@ -402,8 +413,8 @@ namespace IncidentAnalyzerFunction
                 if (isSuspectedDDOS)
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
-                    tc.ResultMessage.Add("\n - There was a major spike in frontend traffic. This could be a DDOS attack.");
-                    tc.ActionSuggestions.Add("\t - Investigate the spike in traffic, and if it is a DDOS attack, take appropriate action. It might self-heal in a few minutes. \n DDOS dashboard: https://portal.microsoftgeneva.com/dashboard/CNS/DDoSSflowCountersProd/Main");
+                    tc.ResultMessage.Add("<br> - There was a major spike in frontend traffic. This could be a DDOS attack.");
+                    tc.ActionSuggestions.Add("&emsp; - Investigate the spike in traffic, and if it is a DDOS attack, take appropriate action. It might self-heal in a few minutes. <br> DDOS dashboard: https://portal.microsoftgeneva.com/dashboard/CNS/DDoSSflowCountersProd/Main");
                 }
                 else
                 {
@@ -419,7 +430,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when running TestForSpikeInFrontEndTraffic");
+                Writer.WriteLine("There was a query failure when running TestForSpikeInFrontEndTraffic <br>");
             }
         }
 
@@ -458,7 +469,7 @@ namespace IncidentAnalyzerFunction
                 if (maxNumMinutesStorageDowntime >= MinutesOfStorageGlitchyToDeclareStorageOutage)
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
-                    tc.ResultMessage.Add("\n - We detected that storage availability dipped below 98% for a period of 5 minutes or longer.");
+                    tc.ResultMessage.Add("<br> - We detected that storage availability dipped below 98% for a period of 5 minutes or longer.");
                     TestsRun.Add(tc);
                     await TestForAzureStorageIssue();
                     await TestForFileServerIssue();
@@ -471,7 +482,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when running TestForStorageIssue");
+                Writer.WriteLine("There was a query failure when running TestForStorageIssue <br>");
             }
         }
 
@@ -511,24 +522,24 @@ namespace IncidentAnalyzerFunction
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
                     StringBuilder sb = new StringBuilder();
-                    sb.Append("\n - There was a File Server issue.");
+                    sb.Append("<br> - There was a File Server issue.");
                     
                     if (fileServerSlowRead.Item2 > SlowReadThreshold)
                     {
                         isFileServerReadSlow = true;
-                        sb.Append($"\n - The slowest read was {fileServerSlowRead.Item2} ms on {fileServerSlowRead.Item1}");
+                        sb.Append($"<br> - The slowest read was {fileServerSlowRead.Item2} ms on {fileServerSlowRead.Item1}");
                     }
 
                     if (fileServerSlowWrite.Item2 > SlowWriteThreshold)
                     {
                         isFileServerWriteSlow = true;
-                        sb.Append($"\n - The slowest write was {fileServerSlowWrite.Item2} ms on {fileServerSlowWrite.Item1}");
+                        sb.Append($"<br> - The slowest write was {fileServerSlowWrite.Item2} ms on {fileServerSlowWrite.Item1}");
                     }
 
                     if (isFileServerReadSlow && isFileServerWriteSlow && fileServerSlowRead.Item1 == fileServerSlowWrite.Item1)
                     {
-                        sb.Append($"\n - The slowest read and write were colocated on the same file server. We suggest you reboot {fileServerSlowRead.Item1}");
-                        tc.ActionSuggestions.Add($"\t - Reboot the file server {fileServerSlowRead.Item1}");
+                        sb.Append($"<br> - The slowest read and write were colocated on the same file server. We suggest you reboot {fileServerSlowRead.Item1}");
+                        tc.ActionSuggestions.Add($"&emsp; - Reboot the file server {fileServerSlowRead.Item1}");
                     }
 
                     tc.ResultMessage.Add(sb.ToString());
@@ -542,7 +553,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when running TestForFileServerIssue");
+                Writer.WriteLine("There was a query failure when running TestForFileServerIssue <br>");
             }
         }
 
@@ -573,23 +584,23 @@ namespace IncidentAnalyzerFunction
 
                     //azureStorageIssue = true;
                     tc.Result = TestCase.TestResult.ProblemDetected;
-                    string result = "\n \t - Azure Storage side problem detected.";
+                    string result = "<br> &emsp; - Azure Storage side problem detected.";
                     foreach (KeyValuePair<string, string> kvp in errorAndCount)
                     {
-                        result += $"\n \t - NtStatusInfo : {kvp.Key}, Count: {kvp.Value}";
+                        result += $"<br> &emsp; - NtStatusInfo : {kvp.Key}, Count: {kvp.Value}";
                     }
 
-                    result += $"\n \t - We suggest you request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}";
+                    result += $"<br> &emsp; - We suggest you request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}";
 
                     tc.ResultMessage.Add(result);
-                    tc.ActionSuggestions.Add($"\t - Request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}");
+                    tc.ActionSuggestions.Add($"&emsp; - Request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}");
                 }
 
                 TestsRun.Add(tc);
             }
             catch (Exception ex)
             {
-                Writer.WriteLine($"There was a query failure when running TestForAzureStorageIssue: {ex.ToString()}");
+                Writer.WriteLine($"There was a query failure when running TestForAzureStorageIssue: {ex.ToString()} <br>");
             }
         }
 
@@ -617,10 +628,10 @@ namespace IncidentAnalyzerFunction
                 }
                 else
                 {
-                    result = $"\n \t - We detected high traffic from the following hostnames at the following time {scopedContext.StartTime}";
+                    result = $"<br> &emsp; - We detected high traffic from the following hostnames at the following time {scopedContext.StartTime}";
                     foreach (var item in resultSet)
                     {
-                        result += $"\n \t Hostname {item.Key}   Max number of requests {item.Value}";
+                        result += $"<br> &emsp; Hostname {item.Key}   Max number of requests {item.Value}";
                     }
 
                     tc.ResultMessage.Add(result);
@@ -642,7 +653,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when running TestTrafficSpikeForSpecificHost");
+                Writer.WriteLine("There was a query failure when running TestTrafficSpikeForSpecificHost <br>");
             }
         }
 
@@ -651,7 +662,7 @@ namespace IncidentAnalyzerFunction
             try
             {
                 TestCase tc = new TestCase("TestSpikeInFrontEndErrors");
-                string result = $"\n - We detected a high number of errors on the frontends during the following times:";
+                string result = $"<br> - We detected a high number of errors on the frontends during the following times:";
 
                 string query = KustoQueries.FrontEndSpikesErrorQuery(Context.StampName, Context.StartTime);
 
@@ -659,7 +670,7 @@ namespace IncidentAnalyzerFunction
 
                 while (r.Read())
                 {
-                    result += $"\n \t - {r[0].ToString()},   Avg number of FE errors {r[1].ToString()}";
+                    result += $"<br> &emsp; - {r[0].ToString()},   Avg number of FE errors {r[1].ToString()}";
                     tc.Result = TestCase.TestResult.ProblemDetected;
                 }
 
@@ -687,7 +698,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when running TestSpikeInFrontEndErrors");
+                Writer.WriteLine("There was a query failure when running TestSpikeInFrontEndErrors <br>");
             }
         }
 
@@ -706,7 +717,7 @@ namespace IncidentAnalyzerFunction
                 string fileServersToReboot = "";
                 while (r.Read())
                 {
-                    result += $"\n \t - Detecting SMB pool congestion on {r[1]}";
+                    result += $"<br> &emsp; - Detecting SMB pool congestion on {r[1]}";
                     fileServersToReboot += $" {r[1]}";
                     tc.Result = TestCase.TestResult.ProblemDetected;
                 }
@@ -714,7 +725,7 @@ namespace IncidentAnalyzerFunction
                 if (tc.Result == TestCase.TestResult.ProblemDetected)
                 {
                     tc.ResultMessage.Add(result);
-                    tc.ActionSuggestions.Add($"\t - SMB pool congestion identified, we suggest rebooting the following fileservers:{fileServersToReboot}");
+                    tc.ActionSuggestions.Add($"&emsp; - SMB pool congestion identified, we suggest rebooting the following fileservers:{fileServersToReboot}");
                 }
                 else
                 {
@@ -736,7 +747,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when running TestForCongestedSMBPool");
+                Writer.WriteLine("There was a query failure when running TestForCongestedSMBPool <br>");
             }
         }
 
@@ -745,7 +756,7 @@ namespace IncidentAnalyzerFunction
             try
             {
                 TestCase tc = new TestCase("TestForProblemWorkersForSLASites");
-                string result = $"\n - We detected SLA site failures on the following workers:\n";
+                string result = $"<br> - We detected SLA site failures on the following workers:<br>";
 
                 string query = KustoQueries.DetectErrorsOnWorkerForSLASites(Context.StampName, Context.StartTime);
 
@@ -753,11 +764,11 @@ namespace IncidentAnalyzerFunction
 
                 while (r.Read())
                 {
-                    result += "Sc_status:     \t" + r[0] + "\n";
-                    result += "Sc_substatus:  \t" + r[1] + "\n";
-                    result += "win32_status:  \t" + r[2] + "\n";
-                    result += "EventIpAddress:\t" + r[3] + "\n";
-                    result += "Count:         \t" + r[4] + "\n\n";
+                    result += "Sc_status:     \t" + r[0] + "<br>";
+                    result += "Sc_substatus:  \t" + r[1] + "<br>";
+                    result += "win32_status:  \t" + r[2] + "<br>";
+                    result += "EventIpAddress:\t" + r[3] + "<br>";
+                    result += "Count:         \t" + r[4] + "<br><br>";
                     tc.Result = TestCase.TestResult.ProblemDetected;
                 }
 
@@ -776,7 +787,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when running TestForProblemWorkersForSLASites");
+                Writer.WriteLine("There was a query failure when running TestForProblemWorkersForSLASites <br>");
             }
         }
 

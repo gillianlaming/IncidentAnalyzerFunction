@@ -123,7 +123,7 @@ namespace IncidentAnalyzerFunction
                     continue;
                 }
 
-                resultString += item + "\n";
+                resultString += item + "<br>";
             }
 
             return resultString;
@@ -135,7 +135,7 @@ namespace IncidentAnalyzerFunction
             string paddedTestName = testName;
             for(int i = testName.Length; i < maxLen; i++)
             {
-                paddedTestName += " ";
+                paddedTestName += "&nbsp;";
             }
 
             return paddedTestName;

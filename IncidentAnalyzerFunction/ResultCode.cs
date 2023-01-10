@@ -41,7 +41,7 @@ namespace IncidentAnalyzerFunction
 
         public override string ToString()
         {
-            return Value + "\t" + Description;
+            return Value + "&emsp;" + Description;
         }
     }
 }
