@@ -76,7 +76,9 @@ namespace IncidentAnalyzerFunction
                 ListTestsRunAndRevealResults();
 
                 GetStampInformation();
-                
+
+                PrintRerunAndFeedbackInfo();
+
                 Writer.Close();
                 ostrm.Close();
             }
@@ -195,6 +197,19 @@ namespace IncidentAnalyzerFunction
             }
 
             return storageAccountName;
+        }
+
+        private void PrintRerunAndFeedbackInfo()
+        {
+            DateTime adjustedStartTime = Convert.ToDateTime(Context.StartTime).Add(TimeSpan.FromHours(1));
+            Writer.WriteLine("<br>");
+            Writer.WriteLine("<h1 style='font-size:19px;'> ----------------------------Finishing Auto Triage-----------------</h1><br>");
+            Writer.WriteLine("To re-run AutoTriage, please click one of the below links:<br>");
+            Writer.WriteLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={Context.StampName}&timeStamp={adjustedStartTime.ToString()}' target = \"_blank\"> Re-Run AutoTriage for incident start time </a><br>");
+            Writer.WriteLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={Context.StampName}' target = \"_blank\"> Re-Run AutoTriage for current time </a><br>");
+            Writer.WriteLine("<br> Did you encounter a bug with auto triage or have feedback? Report it");
+            Writer.WriteLine($"<a href='https://forms.office.com/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR9yuUd7I4DxFkOM_Cds2QHpUMDFHSjlFNU82NkJCWFJWOVU3NUxFRzQ4NC4u' target = \"_blank\"> here </a><br>");
+
         }
 
         #endregion

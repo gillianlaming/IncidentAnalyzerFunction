@@ -59,16 +59,6 @@ namespace IncidentAnalyzerFunction
                     sb.AppendLine(line);
                 }
 
-                sb.Append("<br>");
-                sb.AppendLine("<h1 style='font-size:19px;'> ----------------------------Finishing Auto Triage-----------------</h1><br>");
-                sb.AppendLine("To re-run AutoTriage, please click one of the below links:<br>");
-                sb.AppendLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}&timeStamp={startTime}' target = \"_blank\"> Re-Run AutoTriage for incident start time </a><br>");
-                sb.AppendLine($"<a href='https://incidentanalyzer.azurewebsites.net/api/Function1?incidentName={req.Query["incidentName"]}' target = \"_blank\"> Re-Run AutoTriage for current time </a><br>");
-
-                sb.AppendLine("<br> Did you encounter a bug with auto triage or have feedback? Report it");
-                sb.AppendLine($"<a href='https://forms.office.com/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR9yuUd7I4DxFkOM_Cds2QHpUMDFHSjlFNU82NkJCWFJWOVU3NUxFRzQ4NC4u' target = \"_blank\"> here </a><br>");
-               
-                
                 FileStream ostrm = new FileStream(autoTriager.OutputFilePath, FileMode.OpenOrCreate, FileAccess.Write);
                 StreamWriter writer = new StreamWriter(ostrm);
 
