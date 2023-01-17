@@ -285,7 +285,7 @@ namespace IncidentAnalyzerFunction
         {
             try
             {
-                Writer.WriteLine(FormattingHelper.FormatHeading("----------------------------Stamp Information-----------------------------------"));
+                Writer.WriteLine(FormattingHelper.FormatHeading($"----------------------------Stamp Information ({Context.StampName})-----------------------------------"));
 
                 string query = KustoQueries.GetStampInformationQuery(Context.StampName);
 
