@@ -510,7 +510,7 @@ namespace IncidentAnalyzerFunction
                 const int SlowWriteThreshold = 1000;
                 TestCase tc = new TestCase("TestForFileServerIssue");
                 bool isFileServerReadSlow = false;
-                bool isFileServerWriteSlow = true;
+                bool isFileServerWriteSlow = false;
                 string query = KustoQueries.FileServerRwLatencyQuery(Context.StampName, Context.StartTime, Context.EndTime);
 
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
