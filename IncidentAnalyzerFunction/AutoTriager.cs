@@ -514,6 +514,7 @@ namespace IncidentAnalyzerFunction
                 bool isSecondSlowestFileServerReadSlow = false;
                 bool isSecondSlowestFileServerWriteSlow = false;
                 string query = KustoQueries.FileServerRwLatencyQuery(Context.StampName, Context.StartTime, Context.EndTime);
+                string fileShareToReboot = "";
 
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
 
@@ -556,20 +557,39 @@ namespace IncidentAnalyzerFunction
                     {
                         isSlowestFileServerReadSlow = true;
                         sb.Append($"<br> - The slowest read was {fileServerSlowestRead.Item2} ms on {fileServerSlowestRead.Item1}");
-                        isSecondSlowestFileServerReadSlow = fileServerSecondSlowestRead.Item2 > SlowReadThreshold;
+                        if (fileServerSecondSlowestRead.Item2 > SlowReadThreshold)
+                        {
+                            isSecondSlowestFileServerReadSlow = true;
+                            sb.Append($"<br> - The second slowest read was {fileServerSecondSlowestRead.Item2} ms on {fileServerSecondSlowestRead.Item1}, multiple file servers have high read latency.");
+                        }
+                        else
+                        {
+                            fileShareToReboot = fileServerSlowestRead.Item1;
+                        }
                     }
 
                     if (fileServerSlowestWrite.Item2 > SlowWriteThreshold)
                     {
                         isSlowestFileServerWriteSlow = true;
                         sb.Append($"<br> - The slowest write was {fileServerSlowestWrite.Item2} ms on {fileServerSlowestWrite.Item1}");
-                        isSecondSlowestFileServerWriteSlow = fileServerSecondSlowestWrite.Item2 > SlowWriteThreshold;
+                        if (fileServerSecondSlowestWrite.Item2 > SlowWriteThreshold)
+                        {
+                            isSecondSlowestFileServerWriteSlow = true;
+                            sb.Append($"<br> - The second slowest write was {fileServerSecondSlowestWrite.Item2} ms on {fileServerSecondSlowestWrite.Item1}, multiple file servers have high write latency.");
+                        }
+                        else
+                        {
+                            if (fileShareToReboot == "")
+                            {
+                                fileShareToReboot = fileServerSlowestWrite.Item1;
+                            }
+                        }
                     }
 
                     if ((isSlowestFileServerReadSlow && !isSecondSlowestFileServerReadSlow) || (isSlowestFileServerWriteSlow && !isSecondSlowestFileServerWriteSlow))
                     {
-                        sb.Append($"<br> - The slowest read and write were colocated on the same file server. We suggest you reboot {fileServerSlowestRead.Item1}");
-                        tc.ActionSuggestions.Add($"&emsp; - Reboot the file server {fileServerSlowestRead.Item1}");
+                        sb.Append($"<br> - A file server is experiencing slow read or write. We suggest you reboot {fileShareToReboot}");
+                        tc.ActionSuggestions.Add($"&emsp; - Reboot the file server {fileShareToReboot}");
                     }
 
                     tc.ResultMessage.Add(sb.ToString());
