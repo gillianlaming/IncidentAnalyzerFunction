@@ -507,54 +507,69 @@ namespace IncidentAnalyzerFunction
             try
             {
                 const int SlowReadThreshold = 1000;
-                const int SlowWriteThreshold = 1000;
+                const int SlowWriteThreshold = 500;
                 TestCase tc = new TestCase("TestForFileServerIssue");
-                bool isFileServerReadSlow = false;
-                bool isFileServerWriteSlow = false;
+                bool isSlowestFileServerReadSlow = false;
+                bool isSlowestFileServerWriteSlow = false;
+                bool isSecondSlowestFileServerReadSlow = false;
+                bool isSecondSlowestFileServerWriteSlow = false;
                 string query = KustoQueries.FileServerRwLatencyQuery(Context.StampName, Context.StartTime, Context.EndTime);
 
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
 
-                (string, double) fileServerSlowRead = ("", 0.0);
-                (string, double) fileServerSlowWrite = ("", 0.0);
+                (string, double) fileServerSlowestRead = ("", 0.0);
+                (string, double) fileServerSlowestWrite = ("", 0.0);
+                (string, double) fileServerSecondSlowestRead = ("", 0.0);
+                (string, double) fileServerSecondSlowestWrite = ("", 0.0);
 
                 while (r.Read())
                 {
-                    if (string.IsNullOrEmpty(fileServerSlowRead.Item1) || fileServerSlowRead.Item2 < double.Parse(r[1].ToString()))
+                    //find the slowest and second slowest file server
+                    if (double.Parse(r[1].ToString()) > fileServerSlowestRead.Item2)
                     {
-                        fileServerSlowRead.Item1 = r[0].ToString();
-                        fileServerSlowRead.Item2 = double.Parse(r[1].ToString());
+                        fileServerSecondSlowestRead = fileServerSlowestRead;
+                        fileServerSlowestRead = (r[0].ToString(), double.Parse(r[1].ToString()));
                     }
-
-                    if (string.IsNullOrEmpty(fileServerSlowWrite.Item1) || fileServerSlowWrite.Item2 < double.Parse(r[2].ToString()))
+                    else if (double.Parse(r[1].ToString()) > fileServerSecondSlowestRead.Item2)
                     {
-                        fileServerSlowWrite.Item1 = r[0].ToString();
-                        fileServerSlowWrite.Item2 = double.Parse(r[2].ToString());
+                        fileServerSecondSlowestRead = (r[0].ToString(), double.Parse(r[1].ToString()));
+                    }
+                    
+                    if (double.Parse(r[2].ToString()) > fileServerSlowestRead.Item2)
+                    {
+                        fileServerSecondSlowestWrite = fileServerSlowestWrite;
+                        fileServerSlowestWrite = (r[0].ToString(), double.Parse(r[2].ToString()));
+                    }
+                    else if (double.Parse(r[2].ToString()) > fileServerSecondSlowestRead.Item2)
+                    {
+                        fileServerSecondSlowestRead = (r[0].ToString(), double.Parse(r[2].ToString()));
                     }
                 }
                 
-                if (fileServerSlowRead.Item2 > SlowReadThreshold || fileServerSlowWrite.Item2 > SlowWriteThreshold)
+                if (fileServerSlowestRead.Item2 > SlowReadThreshold || fileServerSlowestWrite.Item2 > SlowWriteThreshold)
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
                     StringBuilder sb = new StringBuilder();
                     sb.Append("<br> - There was a File Server issue.");
                     
-                    if (fileServerSlowRead.Item2 > SlowReadThreshold)
+                    if (fileServerSlowestRead.Item2 > SlowReadThreshold)
                     {
-                        isFileServerReadSlow = true;
-                        sb.Append($"<br> - The slowest read was {fileServerSlowRead.Item2} ms on {fileServerSlowRead.Item1}");
+                        isSlowestFileServerReadSlow = true;
+                        sb.Append($"<br> - The slowest read was {fileServerSlowestRead.Item2} ms on {fileServerSlowestRead.Item1}");
+                        isSecondSlowestFileServerReadSlow = fileServerSecondSlowestRead.Item2 > SlowReadThreshold;
                     }
 
-                    if (fileServerSlowWrite.Item2 > SlowWriteThreshold)
+                    if (fileServerSlowestWrite.Item2 > SlowWriteThreshold)
                     {
-                        isFileServerWriteSlow = true;
-                        sb.Append($"<br> - The slowest write was {fileServerSlowWrite.Item2} ms on {fileServerSlowWrite.Item1}");
+                        isSlowestFileServerWriteSlow = true;
+                        sb.Append($"<br> - The slowest write was {fileServerSlowestWrite.Item2} ms on {fileServerSlowestWrite.Item1}");
+                        isSecondSlowestFileServerWriteSlow = fileServerSecondSlowestWrite.Item2 > SlowWriteThreshold;
                     }
 
-                    if (isFileServerReadSlow && isFileServerWriteSlow && fileServerSlowRead.Item1 == fileServerSlowWrite.Item1)
+                    if ((isSlowestFileServerReadSlow && !isSecondSlowestFileServerReadSlow) || (isSlowestFileServerWriteSlow && !isSecondSlowestFileServerWriteSlow))
                     {
-                        sb.Append($"<br> - The slowest read and write were colocated on the same file server. We suggest you reboot {fileServerSlowRead.Item1}");
-                        tc.ActionSuggestions.Add($"&emsp; - Reboot the file server {fileServerSlowRead.Item1}");
+                        sb.Append($"<br> - The slowest read and write were colocated on the same file server. We suggest you reboot {fileServerSlowestRead.Item1}");
+                        tc.ActionSuggestions.Add($"&emsp; - Reboot the file server {fileServerSlowestRead.Item1}");
                     }
 
                     tc.ResultMessage.Add(sb.ToString());
