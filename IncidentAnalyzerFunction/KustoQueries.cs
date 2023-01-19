@@ -64,11 +64,11 @@ let actualAggregationPeriod=totimespan(_aggregationPeriod);
 let roundedStartTime=bin(_startTime,actualAggregationPeriod);
 let roundedEndTime=bin(_endTime,actualAggregationPeriod);
 let  FileServerIpInfo=materialize(RoleInstanceHeartbeat
-    | where (EventPrimaryStampName == _primaryStampName)
-    | where TIMESTAMP between (_startTime.._endTime)
-    | where Role==""FileServerRole""
-    | summarize by RoleInstance,FsIpAddress=iff(isempty(PublicIpAddress),Details,PublicIpAddress), EventStampName
-    );
+| where (EventPrimaryStampName == _primaryStampName)
+| where TIMESTAMP between (_startTime.._endTime)
+| where Role==""FileServerRole""
+| summarize by RoleInstance,FsIpAddress=iff(isempty(PublicIpAddress),Details,PublicIpAddress), EventStampName
+);
 let beginEndTable=range TIMESTAMP from roundedStartTime to roundedEndTime step actualAggregationPeriod
 | extend avgReadTimeInMs=toint(0), avgWriteTimeInMs=toint(0), FsRoleInstance=""_filler_"";
 AntaresStorageVolumeHealth  
@@ -96,15 +96,17 @@ AntaresStorageVolumeHealth
 
         public static string GetAzureStorageAccountName(string stampName)
         {
-            return string.Format(@"AntaresCostAnalysisEvents
-| where TIMESTAMP > ago(1d)
+            return string.Format(@"AntaresFileServerEvents
+| where TIMESTAMP > ago(2h)
 | where EventPrimaryStampName == '{0}'
-| where ResourceType contains 'storage'
-| distinct ResourceId
-| parse ResourceId with * 'storageaccounts/' storageAccountName
-| project storageAccountName
-| where storageAccountName startswith 'wawsstorage'",
-                                    stampName);
+| where EventId == 45036
+| where Operation == ""Mount""
+| project Details, EventPrimaryStampName
+| parse Details with * @""://"" StorageAccount1 ""."" *
+| extend StorageAccount = replace_string(StorageAccount1, ""-secondary"", """")
+| where EventPrimaryStampName !endswith ""dr""
+| summarize by StorageAccount", 
+            stampName);
         }
 
         public static string FrontEndTrafficSpikeQuery(string stampName, string startTime)
