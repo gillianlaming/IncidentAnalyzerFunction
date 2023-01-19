@@ -740,7 +740,7 @@ namespace IncidentAnalyzerFunction
                 if (tc.Result == TestCase.TestResult.ProblemDetected)
                 {
                     tc.ResultMessage.Add(result);
-                    tc.ActionSuggestions.Add($"&emsp; - SMB pool congestion identified, we suggest rebooting the following fileservers:{fileServersToReboot}");
+                    tc.ActionSuggestions.Add($"- SMB pool congestion identified on {fileServersToReboot}. Please RA the File and Worker loop for assistance with mitigation. Rebooting the fileserver may NOT be the best course of action.");
                 }
                 else
                 {
