@@ -14,7 +14,7 @@ namespace IncidentAnalyzerFunction
         // NOTE: needs to be in sync with TestCase.TestNameToResultCodeDict
         public Dictionary<int, string> ValueToDescriptionDictionary = new Dictionary<int, string>()
         {
-            { 1, "503.65 errors detected" },
+            { 1, "NotEnoughWorkers" },
             { 2, "SpikeInFrontendTraffic" },
             { 3, "SpikeInFrontendErrors" },
             { 4, "SpikeInTrafficToHostname" },
@@ -22,7 +22,7 @@ namespace IncidentAnalyzerFunction
             { 6, "GeneralStorageIssue" },
             { 7, "FileServerIssue" },
             { 8, "WorkerErrorsForSLASites" },
-            { 9, "TestForCongestedSMBPool" }
+            { 9, "CongestedSMBPool" }
         };
 
         public ResultCode(int value)
@@ -41,7 +41,8 @@ namespace IncidentAnalyzerFunction
 
         public override string ToString()
         {
-            return Value + "&emsp;" + Description;
+            return Value + " " + Description;
         }
+
     }
 }

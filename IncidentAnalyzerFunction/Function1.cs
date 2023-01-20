@@ -71,6 +71,15 @@ namespace IncidentAnalyzerFunction
                 var stream = new FileStream(autoTriager.OutputFilePath, FileMode.Open);
                 response.Content = new StreamContent(stream);
                 response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/html");
+
+                // Send over the results of auto triage as a header
+                string results = "";
+                foreach (var code in autoTriager.ResultCodes)
+                {
+                    results += code.Description + " ";
+                }
+
+                response.Headers.Add("AutoTriageResult", results);
                 return response;
             }
             catch (Exception ex)
