@@ -765,6 +765,7 @@ namespace IncidentAnalyzerFunction
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
                 string result = "";
                 string fileServersToReboot = "";
+                
                 while (r.Read())
                 {
                     result += $"<br> &emsp; - Detecting SMB pool congestion on {r[1]}";
@@ -774,8 +775,22 @@ namespace IncidentAnalyzerFunction
 
                 if (tc.Result == TestCase.TestResult.ProblemDetected)
                 {
+                    // get the volume with the congestion which should be isolated
+                    string getBadVolumeQuery = KustoQueries.IdentifyProblematicVolumeForCongestedFileServer(Context.StampName, Context.StartTime, fileServersToReboot.Trim());
+                    r = await KustoClient.ExecuteQueryAsync(Context.Database, getBadVolumeQuery, Properties);
+                    string badVolume = "";
+                    while (r.Read())
+                    {
+                        badVolume = r[0].ToString();
+                    }
+
+                    if (String.IsNullOrEmpty(badVolume))
+                    {
+                        badVolume = "not found";
+                    }
+
                     tc.ResultMessage.Add(result);
-                    tc.ActionSuggestions.Add($"- SMB pool congestion identified on {fileServersToReboot}. Please RA the File and Worker loop for assistance with mitigation. Rebooting the fileserver may NOT be the best course of action.");
+                    tc.ActionSuggestions.Add($"- SMB pool congestion identified on {fileServersToReboot}. Please RA the File and Worker loop for assistance with mitigation. The problematic volume is {badVolume}");
                 }
                 else
                 {
