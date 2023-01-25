@@ -47,6 +47,7 @@ namespace IncidentAnalyzerFunction
             { "hk1", "wawseas" },
             { "jinc", "wawseas" },
             { "jnb21", "wawseas" },
+            { "jinw", "wawseas" },
             { "kw1", "wawseas" },
             { "ln1", "wawsneu" },
             { "ma1", "wawseas" },
