@@ -790,7 +790,7 @@ namespace IncidentAnalyzerFunction
                     }
 
                     tc.ResultMessage.Add(result);
-                    tc.ActionSuggestions.Add($"- SMB pool congestion identified on {fileServersToReboot}. Please RA the File and Worker loop for assistance with mitigation. The problematic volume is {badVolume}");
+                    tc.ActionSuggestions.Add($"- SMB pool congestion identified, please try rebooting {fileServersToReboot}. If that doesn't help, please RA the file and worker loop for assistance isolating {badVolume}.");
                 }
                 else
                 {
