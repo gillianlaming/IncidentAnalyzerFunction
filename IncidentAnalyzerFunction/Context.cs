@@ -139,7 +139,7 @@ namespace IncidentAnalyzerFunction
         public KustoConnectionStringBuilder GetKustoConnectionString()
         {
             var serviceUri = String.Format("https://{0}.kusto.windows.net/{1};Fed=true", Cluster, Database);
-            return new KustoConnectionStringBuilder(serviceUri).WithAadUserManagedIdentity("75ef2f23-abca-48b4-bd61-e7714b19c55c");
+            return new KustoConnectionStringBuilder(serviceUri);//.WithAadUserManagedIdentity("75ef2f23-abca-48b4-bd61-e7714b19c55c");
         }
 
     }
