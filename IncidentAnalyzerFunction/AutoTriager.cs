@@ -596,7 +596,7 @@ namespace IncidentAnalyzerFunction
                         sb.Append($"<br> - A file server is experiencing slow read or write. We suggest you reboot {fileShareToReboot}");
                         
                         tc.ActionSuggestions.Add($"<a href='{GenerateStorageDashboardLink(Context.StampName, Context.StartTime, Context.EndTime, Context.Cluster)}' target = \"_blank\"> Storage Dashboard Link </a><br>");
-                        tc.ActionSuggestions.Add($"- Single file server high latency is Reboot the file server {fileShareToReboot}.");
+                        tc.ActionSuggestions.Add($"- Single file server high latency, suggest to reboot the file server {fileShareToReboot}.");
                     }
 
                     tc.ResultMessage.Add(sb.ToString());
