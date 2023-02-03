@@ -37,7 +37,7 @@ namespace IncidentAnalyzerFunction
 
         public AutoTriager(string stampName, string startTime, IncidentType incidentType)
         {
-            GetInputsAndInitializeContext(stampName, startTime);
+            GetInputsAndInitializeContext(stampName, FormatTime(startTime));
             _outputFile = "Output" + Guid.NewGuid() + ".txt";
             OutputFilePath = Path.Combine(@"c:\home\LogFiles", _outputFile);
             KindOfIncident = incidentType;
@@ -93,18 +93,29 @@ namespace IncidentAnalyzerFunction
         }
 
         #region Private helpers
-        private void GetInputsAndInitializeContext(string stampName, string startTime)
+        private void GetInputsAndInitializeContext(string stampName, DateTime startTime)
         {
-            DateTime adjustedStartTime = Convert.ToDateTime(startTime);
+            DateTime adjustedStartTime = startTime;
             adjustedStartTime = adjustedStartTime.Subtract(TimeSpan.FromHours(1));
             DateTime adjustedEndTime = adjustedStartTime.Add(TimeSpan.FromHours(2));
 
-            Context = new Context(stampName, adjustedStartTime.ToString(), adjustedEndTime.ToString(), "", "");
+            Context = new Context(stampName, adjustedStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"), adjustedEndTime.ToString("yyyy-MM-ddTHH:mm:ssZ"), "", "");
             
             KustoConnectionStringBuilder connectionString = Context.GetKustoConnectionString();
             KustoClient = KustoClientFactory.CreateCslQueryProvider(connectionString);
 
             Properties.SetOption(ClientRequestProperties.OptionDeferPartialQueryFailures, true);
+        }
+
+        //Format time from mm/dd/yyyy hh:mm:ss AM/PM to yyyy-mm-ddThh:mm:ssZ UTC
+        private DateTime FormatTime(string time)
+        {
+            return Convert.ToDateTime(time);
+        }
+
+        private string GenerateStorageDashboardLink(string stampName, string startTime, string endTime, string cluster, string database = "wawsprod", string fileServer = "all", string volume = "all", string aggregationPeriod = "5m", string prospectiveFileServers = "all", string targetVolume = "all")
+        { 
+            return $"https://dataexplorer.azure.com/dashboards/5dc4f900-f679-46eb-872f-3bb528e18860?p-_startTime={startTime}&p-_endTime={endTime}&p-_cluster=v-{cluster}&p-_database=v-{database}&p-_primaryStampName=v-{stampName}&p-_aggregationPeriod=v-{aggregationPeriod}&p-_volumeNames={volume}&p-_fileServerInstances={fileServer}&p-_prospectiveFileServers={prospectiveFileServers}&p-_targetVolume={targetVolume}";
         }
 
         private void PrintResultCodes()
@@ -221,6 +232,8 @@ namespace IncidentAnalyzerFunction
             Task.WaitAll(TestFor503_65(),
                          TestForSpikeInFrontEndTraffic(),
                          TestForStorageIssue(),
+                         TestForAzureStorageIssue(),
+                         TestForFileServerIssue(),
                          TestSpikeInFrontEndErrors(),
                          TestForCongestedSMBPool(),
                          GetRecentDeploymentInformation());
@@ -457,7 +470,7 @@ namespace IncidentAnalyzerFunction
                 const int MinutesOfStorageGlitchyToDeclareStorageOutage = 3;
                 const double AvailabilityThreshold = 0.98;
                 
-                TestCase tc = new TestCase("TestForStorageIssue");
+                TestCase tc = new TestCase("TestForStorageAvailability");
 
                 string query = KustoQueries.StorageOverallAvaiabilityQuery(Context.StampName, Context.StartTime, Context.EndTime);
 
@@ -484,10 +497,8 @@ namespace IncidentAnalyzerFunction
                 if (maxNumMinutesStorageDowntime >= MinutesOfStorageGlitchyToDeclareStorageOutage)
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
-                    tc.ResultMessage.Add("<br> - We detected that storage availability dipped below 98% for a period of 5 minutes or longer.");
+                    tc.ResultMessage.Add($"<br> - We detected that storage availability dipped below {AvailabilityThreshold * 100}% for a period of {MinutesOfStorageGlitchyToDeclareStorageOutage} minutes or longer.");
                     TestsRun.Add(tc);
-                    await TestForAzureStorageIssue();
-                    await TestForFileServerIssue();
                 }
                 else
                 {
@@ -507,7 +518,7 @@ namespace IncidentAnalyzerFunction
             try
             {
                 const int SlowReadThreshold = 1000;
-                const int SlowWriteThreshold = 500;
+                const int SlowWriteThreshold = 800;
                 TestCase tc = new TestCase("TestForFileServerIssue");
                 bool isSlowestFileServerReadSlow = false;
                 bool isSlowestFileServerWriteSlow = false;
@@ -517,7 +528,8 @@ namespace IncidentAnalyzerFunction
                 string fileShareToReboot = "";
 
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
-
+                List<(string, double)> fileServerReadLatency = new List<(string, double)>();
+                List<(string, double)> fileServerWriteLatency = new List<(string, double)>();
                 (string, double) fileServerSlowestRead = ("", 0.0);
                 (string, double) fileServerSlowestWrite = ("", 0.0);
                 (string, double) fileServerSecondSlowestRead = ("", 0.0);
@@ -525,28 +537,21 @@ namespace IncidentAnalyzerFunction
 
                 while (r.Read())
                 {
-                    //find the slowest and second slowest file server
-                    if (double.Parse(r[1].ToString()) > fileServerSlowestRead.Item2)
+                    if (r[0] != null && r[1] != null && r[2] != null)
                     {
-                        fileServerSecondSlowestRead = fileServerSlowestRead;
-                        fileServerSlowestRead = (r[0].ToString(), double.Parse(r[1].ToString()));
-                    }
-                    else if (double.Parse(r[1].ToString()) > fileServerSecondSlowestRead.Item2)
-                    {
-                        fileServerSecondSlowestRead = (r[0].ToString(), double.Parse(r[1].ToString()));
-                    }
-                    
-                    if (double.Parse(r[2].ToString()) > fileServerSlowestRead.Item2)
-                    {
-                        fileServerSecondSlowestWrite = fileServerSlowestWrite;
-                        fileServerSlowestWrite = (r[0].ToString(), double.Parse(r[2].ToString()));
-                    }
-                    else if (double.Parse(r[2].ToString()) > fileServerSecondSlowestRead.Item2)
-                    {
-                        fileServerSecondSlowestRead = (r[0].ToString(), double.Parse(r[2].ToString()));
+                        fileServerReadLatency.Add((r[0].ToString(), double.Parse(r[1].ToString())));
+                        fileServerWriteLatency.Add((r[0].ToString(), double.Parse(r[2].ToString())));
                     }
                 }
                 
+                fileServerReadLatency.Sort((x, y) => y.Item2.CompareTo(x.Item2));
+                fileServerSlowestRead = fileServerReadLatency[0];
+                fileServerSecondSlowestRead = fileServerReadLatency[1];
+                fileServerWriteLatency.Sort((x, y) => y.Item2.CompareTo(x.Item2));
+                fileServerSlowestWrite = fileServerWriteLatency[0];
+                fileServerSecondSlowestWrite = fileServerWriteLatency[1];
+
+
                 if (fileServerSlowestRead.Item2 > SlowReadThreshold || fileServerSlowestWrite.Item2 > SlowWriteThreshold)
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
@@ -589,7 +594,9 @@ namespace IncidentAnalyzerFunction
                     if ((isSlowestFileServerReadSlow && !isSecondSlowestFileServerReadSlow) || (isSlowestFileServerWriteSlow && !isSecondSlowestFileServerWriteSlow))
                     {
                         sb.Append($"<br> - A file server is experiencing slow read or write. We suggest you reboot {fileShareToReboot}");
-                        tc.ActionSuggestions.Add($"&emsp; - Reboot the file server {fileShareToReboot}");
+                        
+                        tc.ActionSuggestions.Add($"<a href='{GenerateStorageDashboardLink(Context.StampName, Context.StartTime, Context.EndTime, Context.Cluster)}' target = \"_blank\"> Storage Dashboard Link </a><br>");
+                        tc.ActionSuggestions.Add($"- Single file server high latency, suggest to reboot the file server {fileShareToReboot}.");
                     }
 
                     tc.ResultMessage.Add(sb.ToString());
@@ -644,6 +651,10 @@ namespace IncidentAnalyzerFunction
 
                     tc.ResultMessage.Add(result);
                     tc.ActionSuggestions.Add($"&emsp; - Request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}");
+                }
+                else
+                {
+                    tc.Result = TestCase.TestResult.Passed;
                 }
 
                 TestsRun.Add(tc);
@@ -760,7 +771,8 @@ namespace IncidentAnalyzerFunction
 
                 // During initialization, we adjusted the start time by an hour
                 // Add that time back so we have the exact time passed through on execution
-                DateTime adjustedStartTime = Convert.ToDateTime(Context.StartTime).Add(TimeSpan.FromHours(1));
+                //DateTime adjustedStartTime = Convert.ToDateTime(Context.StartTime).Add(TimeSpan.FromHours(1));
+                DateTime adjustedStartTime = TimeZoneInfo.ConvertTimeToUtc(Convert.ToDateTime(Context.StartTime)).Add(TimeSpan.FromHours(1));
                 string query = KustoQueries.HighlyCongestedSMBPoolQuery(Context.StampName, adjustedStartTime.ToString());
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
                 string result = "";
@@ -790,6 +802,7 @@ namespace IncidentAnalyzerFunction
                     }
 
                     tc.ResultMessage.Add(result);
+                    tc.ActionSuggestions.Add($"<a href='{GenerateStorageDashboardLink(Context.StampName, Context.StartTime, Context.EndTime, Context.Cluster)}' target = \"_blank\"> Storage Dashboard Link </a><br>");
                     tc.ActionSuggestions.Add($"- SMB pool congestion identified, please try rebooting {fileServersToReboot}. If that doesn't help, please RA the file and worker loop for assistance isolating {badVolume}.");
                 }
                 else
