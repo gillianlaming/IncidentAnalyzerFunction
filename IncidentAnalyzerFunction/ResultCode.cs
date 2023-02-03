@@ -22,7 +22,8 @@ namespace IncidentAnalyzerFunction
             { 6, "GeneralStorageIssue" },
             { 7, "FileServerIssue" },
             { 8, "WorkerErrorsForSLASites" },
-            { 9, "CongestedSMBPool" }
+            { 9, "CongestedSMBPool" },
+            { 10, "TestForStorageAvailability" }
         };
 
         public ResultCode(int value)

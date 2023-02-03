@@ -180,6 +180,11 @@ namespace IncidentAnalyzerFunction
             {
                 Writer.WriteLine(KustoQueries.HighlyCongestedSMBPoolQuery(Context.StampName, Context.StartTime));
             }
+
+            if (resultCodeValue == 10)
+            {
+                Writer.WriteLine(KustoQueries.StorageOverallAvaiabilityQuery(Context.StampName, Context.StartTime, Context.EndTime));
+            }
         }
 
         private void PrintActionSuggesions()
@@ -254,7 +259,7 @@ namespace IncidentAnalyzerFunction
             TestsRun.Sort();
             foreach (TestCase tc in TestsRun)
             {
-                if (tc.Code.Value != 0)
+                if (tc.Result == TestCase.TestResult.ProblemDetected)
                 {
                     testsRun += FormattingHelper.FormatFailedTest(tc.ToString());
                     isProblemFound = true;
@@ -525,7 +530,7 @@ namespace IncidentAnalyzerFunction
                 bool isSecondSlowestFileServerReadSlow = false;
                 bool isSecondSlowestFileServerWriteSlow = false;
                 string query = KustoQueries.FileServerRwLatencyQuery(Context.StampName, Context.StartTime, Context.EndTime);
-                string fileShareToReboot = "";
+                string fileServerToReboot = "";
 
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
                 List<(string, double)> fileServerReadLatency = new List<(string, double)>();
@@ -569,7 +574,7 @@ namespace IncidentAnalyzerFunction
                         }
                         else
                         {
-                            fileShareToReboot = fileServerSlowestRead.Item1;
+                            fileServerToReboot = fileServerSlowestRead.Item1;
                         }
                     }
 
@@ -584,19 +589,19 @@ namespace IncidentAnalyzerFunction
                         }
                         else
                         {
-                            if (fileShareToReboot == "")
+                            if (fileServerToReboot == "")
                             {
-                                fileShareToReboot = fileServerSlowestWrite.Item1;
+                                fileServerToReboot = fileServerSlowestWrite.Item1;
                             }
                         }
                     }
 
                     if ((isSlowestFileServerReadSlow && !isSecondSlowestFileServerReadSlow) || (isSlowestFileServerWriteSlow && !isSecondSlowestFileServerWriteSlow))
                     {
-                        sb.Append($"<br> - A file server is experiencing slow read or write. We suggest you reboot {fileShareToReboot}");
+                        sb.Append($"<br> - A file server is experiencing slow read or write. We suggest you reboot {fileServerToReboot}");
                         
                         tc.ActionSuggestions.Add($"<a href='{GenerateStorageDashboardLink(Context.StampName, Context.StartTime, Context.EndTime, Context.Cluster)}' target = \"_blank\"> Storage Dashboard Link </a><br>");
-                        tc.ActionSuggestions.Add($"- Single file server high latency, suggest to reboot the file server {fileShareToReboot}.");
+                        tc.ActionSuggestions.Add($"- Single file server high latency, we suggest you reboot {fileServerToReboot}.");
                     }
 
                     tc.ResultMessage.Add(sb.ToString());
