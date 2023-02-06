@@ -47,11 +47,10 @@ namespace IncidentAnalyzerFunction
             { "TestSpikeInFrontEndErrors", 3 },
             { "TestTrafficSpikeForSpecificHost", 4 },
             { "TestForAzureStorageIssue", 5 },
-            { "TestForStorageIssue", 6 },
+            { "TestForStorageAvailability", 6 },
             { "TestForFileServerIssue", 7 },
             { "TestForProblemWorkersForSLASites", 8 },
-            { "TestForCongestedSMBPool", 9 },
-            { "TestForStorageAvailability", 10 }
+            { "TestForCongestedSMBPool", 9 }
         };
 
         public TestCase(string testName)
