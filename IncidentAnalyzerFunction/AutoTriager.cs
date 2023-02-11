@@ -346,7 +346,18 @@ namespace IncidentAnalyzerFunction
 
                 if (RecentDeployments.Count > 0)
                 {
-                    ActionSuggestions.Add("We detected a recent deployment on this stamp. Please investigate if this incident could have been caused by the deployment.");
+                    RecentDeployments.Sort((x, y) => DateTime.Compare(Convert.ToDateTime(x.StartTime), Convert.ToDateTime(y.StartTime)));
+
+                    var mostRecentDeployment = RecentDeployments[RecentDeployments.Count - 1];
+
+                    if (string.IsNullOrEmpty(mostRecentDeployment.EndTime))
+                    {
+                        ActionSuggestions.Add($"We detected an active deployment on this stamp, template: {mostRecentDeployment.TemplateName}, start time: {mostRecentDeployment.StartTime} Please investigate if this incident could have been caused by the deployment.");
+                    }
+                    else
+                    {
+                        ActionSuggestions.Add($"We detected a recent deployment on this stamp, template: {mostRecentDeployment.TemplateName}, start time: {mostRecentDeployment.StartTime}, end time: {mostRecentDeployment.EndTime}. Please investigate if this incident could have been caused by the deployment.");
+                    }
                 }
             }
             catch (Exception ex)
