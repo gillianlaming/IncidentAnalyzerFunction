@@ -183,7 +183,7 @@ namespace IncidentAnalyzerFunction
 
             if (resultCodeValue == 10)
             {
-                Writer.WriteLine(KustoQueries.StorageOverallAvaiabilityQuery(Context.StampName, Context.StartTime, Context.EndTime));
+                Writer.WriteLine(KustoQueries.GetDataRoleCacheConsistencyErrors(Context.StartTime, Context.StampName));
             }
         }
 
