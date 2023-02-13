@@ -94,6 +94,19 @@ namespace IncidentAnalyzerFunction
                                 endTIme);
         }
 
+        public static string GetDataRoleCacheConsistencyErrors(string startTime, string stampName)
+        {
+            return string.Format(@"AntaresRuntimeDataServiceEvents
+                                | where PreciseTimeStamp between (datetime({0})..1h)
+                                | where EventPrimaryStampName =~ '{1}'
+                                | where EventId == 65452
+                                | summarize count() by bin(PreciseTimeStamp, 10m), RoleInstance
+                                | summarize Problematic10MinPeriods=countif(count_ > 10000) by RoleInstance
+                                | where Problematic10MinPeriods >= 1",
+                                startTime,
+                                stampName);
+        }
+
         public static string GetAzureStorageAccountName(string stampName)
         {
             return string.Format(@"AntaresFileServerEvents

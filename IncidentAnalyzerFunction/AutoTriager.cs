@@ -241,6 +241,7 @@ namespace IncidentAnalyzerFunction
                          TestForFileServerIssue(),
                          TestSpikeInFrontEndErrors(),
                          TestForCongestedSMBPool(),
+                         TestForDataRoleCacheInconsistency(),
                          GetRecentDeploymentInformation());
         }
 
@@ -351,7 +352,7 @@ namespace IncidentAnalyzerFunction
 
                 if (RecentDeployments.Count > 0)
                 {
-                    ActionSuggestions.Add("We detected a recent deployment on this stamp. Please investigate if this incident could have been caused by the deployment.");
+                    ActionSuggestions.Add("&emsp; - We detected a recent deployment on this stamp. Please investigate if this incident could have been caused by the deployment.");
                 }
             }
             catch (Exception ex)
@@ -406,7 +407,7 @@ namespace IncidentAnalyzerFunction
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
                     tc.ResultMessage.Add($"<br> &emsp; - There were {countOf503_65} 503.65 errors on the frontend were detected. Manual action to scale out the worker pool may be needed.");
-                    tc.ActionSuggestions.Add("&emsp; - Scale out the worker pool for 503.65 errors. &emsp Scaling instructions: https://microsoft.sharepoint.com/teams/Antares/_layouts/OneNote.aspx?id=%2Fteams%2FAntares%2FShared%20Documents%2FAntares%20Feature%20Crew&wd=target%28VMSS.one%7CBCC6352F-9470-4187-82B4-0854365710F0%2FScaling%20in%20Vmss%7C3DD5048D-ADA3-4A58-B33E-24A7CB6BAF98%2F%29");
+                    tc.ActionSuggestions.Add("&emsp; - Scale out the worker pool for 503.65 errors. Scaling instructions: https://microsoft.sharepoint.com/teams/Antares/_layouts/OneNote.aspx?id=%2Fteams%2FAntares%2FShared%20Documents%2FAntares%20Feature%20Crew&wd=target%28VMSS.one%7CBCC6352F-9470-4187-82B4-0854365710F0%2FScaling%20in%20Vmss%7C3DD5048D-ADA3-4A58-B33E-24A7CB6BAF98%2F%29");
                 }
                 else
                 {
@@ -831,6 +832,52 @@ namespace IncidentAnalyzerFunction
             catch (Exception ex)
             {
                 Writer.WriteLine("There was a query failure when running TestForCongestedSMBPool <br>");
+            }
+        }
+
+        private async Task TestForDataRoleCacheInconsistency()
+        {
+            try
+            {
+                TestCase tc = new TestCase("TestForDataRoleCacheInconsistency");
+                string query = KustoQueries.GetDataRoleCacheConsistencyErrors(Context.StartTime, Context.StampName);
+                IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
+                string result = "";
+
+                while (r.Read())
+                {
+                    result += $"<br> &emsp; -  Detecting DataRole CacheConsistencyErrors on {r[0]}";
+                    tc.Result = TestCase.TestResult.ProblemDetected;
+                }
+
+                if (tc.Result == TestCase.TestResult.ProblemDetected)
+                {
+                    tc.ResultMessage.Add(result);
+                    tc.ActionSuggestions.Add($"<a href='https://eng.ms/docs/cloud-ai-platform/devdiv/serverless-paas-balam/serverless-paas-benbyrd/app-service-web-apps/app-service-team-documents/falconteamdocs/servicing/cacheconsistencyerrors/cacheconsistencyerrors' target = \"_blank\"> DataRole CacheConsistencyErrors </a><br>");
+                    tc.ActionSuggestions.Add($"<a href='https://eng.ms/docs/cloud-ai-platform/devdiv/serverless-paas-balam/serverless-paas-benbyrd/app-service-web-apps/app-service-team-documents/falconteamdocs/servicing/generaldatarole/datarolewipehaqueue' target = \"_blank\"> TSG - Emptying the DataRole HA Queue </a><br>");
+                    tc.ActionSuggestions.Add("&emsp; - We detected Cache Inconsistency on the DataRoles, please consult the following TSGs. You might need to cycle reboot the dataroles or empty the HA queue. For help, RA the Antares FALCON team.");
+                }
+                else
+                {
+                    result = "";
+                }
+
+                if (!TestsRun.Contains(tc))
+                {
+                    TestsRun.Add(tc);
+                }
+                else
+                {
+                    TestCase preexistingTestCase = TestsRun.FirstOrDefault(testCase => testCase.TestName == tc.TestName);
+                    if (preexistingTestCase != null)
+                    {
+                        preexistingTestCase.ResultMessage.Add(result);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Writer.WriteLine("There was a query failure when running TestForDataRoleCacheInconsistency <br>");
             }
         }
 
