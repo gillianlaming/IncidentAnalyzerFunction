@@ -358,7 +358,7 @@ namespace IncidentAnalyzerFunction
 
                     if (string.IsNullOrEmpty(mostRecentDeployment.EndTime))
                     {
-                        ActionSuggestions.Add($"We detected an active deployment on this stamp, template: {mostRecentDeployment.TemplateName}, start time: {mostRecentDeployment.StartTime} Please investigate if this incident could have been caused by the deployment.");
+                        ActionSuggestions.Add($"&emsp; - We detected an active deployment on this stamp, template: {mostRecentDeployment.TemplateName}, start time: {mostRecentDeployment.StartTime} Please investigate if this incident could have been caused by the deployment.");
                     }
                     else
                     {
