@@ -418,7 +418,7 @@ namespace IncidentAnalyzerFunction
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
                     tc.ResultMessage.Add($"<br> &emsp; - There were {countOf503_65} 503.65 errors on the frontend were detected. Manual action to scale out the worker pool may be needed.");
-                    tc.ActionSuggestions.Add("&emsp; - Scale out the worker pool for 503.65 errors. Scaling instructions: https://microsoft.sharepoint.com/teams/Antares/_layouts/OneNote.aspx?id=%2Fteams%2FAntares%2FShared%20Documents%2FAntares%20Feature%20Crew&wd=target%28VMSS.one%7CBCC6352F-9470-4187-82B4-0854365710F0%2FScaling%20in%20Vmss%7C3DD5048D-ADA3-4A58-B33E-24A7CB6BAF98%2F%29");
+                    tc.ActionSuggestions.Add("&emsp; - Detected Not Enough Workers Available. Please check if it's fraud related, or scale out the worker pool for 503.65 errors. Scaling instructions: https://microsoft.sharepoint.com/teams/Antares/_layouts/OneNote.aspx?id=%2Fteams%2FAntares%2FShared%20Documents%2FAntares%20Feature%20Crew&wd=target%28VMSS.one%7CBCC6352F-9470-4187-82B4-0854365710F0%2FScaling%20in%20Vmss%7C3DD5048D-ADA3-4A58-B33E-24A7CB6BAF98%2F%29");
                 }
                 else
                 {
@@ -574,6 +574,7 @@ namespace IncidentAnalyzerFunction
                     tc.Result = TestCase.TestResult.ProblemDetected;
                     StringBuilder sb = new StringBuilder();
                     sb.Append("<br> - There was a File Server issue.");
+                    string storageAccountName = await GetAzureStorageAccountName();
                     
                     if (fileServerSlowestRead.Item2 > SlowReadThreshold)
                     {
@@ -583,6 +584,7 @@ namespace IncidentAnalyzerFunction
                         {
                             isSecondSlowestFileServerReadSlow = true;
                             sb.Append($"<br> - The second slowest read was {fileServerSecondSlowestRead.Item2} ms on {fileServerSecondSlowestRead.Item1}, multiple file servers have high read latency.");
+                            tc.ActionSuggestions.Add($"There are multiple file servers have high read/write latency, it's likely storage cluster outage. If you need to RA XStore, this is the storage account name {storageAccountName}");
                         }
                         else
                         {
@@ -598,6 +600,7 @@ namespace IncidentAnalyzerFunction
                         {
                             isSecondSlowestFileServerWriteSlow = true;
                             sb.Append($"<br> - The second slowest write was {fileServerSecondSlowestWrite.Item2} ms on {fileServerSecondSlowestWrite.Item1}, multiple file servers have high write latency.");
+                            tc.ActionSuggestions.Add($"There are multiple file servers have high read/write latency, it's likely storage cluster outage. If you need to RA XStore, this is the storage account name {storageAccountName}");
                         }
                         else
                         {
