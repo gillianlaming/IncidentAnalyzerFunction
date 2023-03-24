@@ -21,6 +21,7 @@ namespace IncidentAnalyzerFunction
         public string Database { get; set; }
         public string OutputStartTime { get; set; }
         public string OutputEndTime { get; set; }
+        public const string CanaryRunnerCluster = "wawscus";
 
         public Dictionary<string, string> ClusterDictionary = new Dictionary<string, string>()
         {
@@ -136,9 +137,9 @@ namespace IncidentAnalyzerFunction
             return stampLocationParts[2];
         }
 
-        public KustoConnectionStringBuilder GetKustoConnectionString()
+        public KustoConnectionStringBuilder GetKustoConnectionString(bool isCanaryRunnerPingsGeneva = false)
         {
-            var serviceUri = String.Format("https://{0}.kusto.windows.net/{1};Fed=true", Cluster, Database);
+            var serviceUri = String.Format("https://{0}.kusto.windows.net/{1};Fed=true", isCanaryRunnerPingsGeneva ? CanaryRunnerCluster : Cluster, Database);
             return new KustoConnectionStringBuilder(serviceUri).WithAadUserManagedIdentity("75ef2f23-abca-48b4-bd61-e7714b19c55c");
         }
 

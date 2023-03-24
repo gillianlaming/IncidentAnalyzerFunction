@@ -18,12 +18,14 @@ namespace IncidentAnalyzerFunction
     class AutoTriager
     {
         public ICslQueryProvider KustoClient;
+        public ICslQueryProvider KustoClientForCanaryRunnerPingGeneva;
         public Context Context;
         public List<TestCase> TestsRun = new List<TestCase>();
         public List<ResultCode> ResultCodes = new List<ResultCode>();
         public ClientRequestProperties Properties = new ClientRequestProperties();
         public List<string> ActionSuggestions = new List<string>();
         public List<DeploymentInfo> RecentDeployments = new List<DeploymentInfo>();
+        public List<string> ImpactedSubscriptions = new List<string>();
         private string _outputFile;
         public string OutputFilePath;
         public bool IsRunning = false;
@@ -103,7 +105,8 @@ namespace IncidentAnalyzerFunction
             
             KustoConnectionStringBuilder connectionString = Context.GetKustoConnectionString();
             KustoClient = KustoClientFactory.CreateCslQueryProvider(connectionString);
-
+            KustoConnectionStringBuilder connectionStringForCanaryRunner = Context.GetKustoConnectionString(isCanaryRunnerPingsGeneva: true);
+            KustoClientForCanaryRunnerPingGeneva = KustoClientFactory.CreateCslQueryProvider(connectionStringForCanaryRunner);
             Properties.SetOption(ClientRequestProperties.OptionDeferPartialQueryFailures, true);
         }
 
@@ -242,6 +245,7 @@ namespace IncidentAnalyzerFunction
                          TestSpikeInFrontEndErrors(),
                          TestForCongestedSMBPool(),
                          TestForDataRoleCacheInconsistency(),
+                         GetImpactedSubInformation(),
                          GetRecentDeploymentInformation());
         }
 
@@ -335,6 +339,27 @@ namespace IncidentAnalyzerFunction
                 Writer.WriteLine($"There was a query failure when getting recent deployments. <br> {ex.ToString()} <br>");
             }
 
+        }
+
+        private async Task GetImpactedSubInformation()
+        {
+            string query = KustoQueries.GetImpactedSubscriptionInformationQuery(Context.StampName, Context.StartTime);
+            IDataReader r = await KustoClientForCanaryRunnerPingGeneva.ExecuteQueryAsync(Context.Database, query, Properties);
+            const int ImpactedSubscriptionsThreshold = 3;
+
+            while (r.Read())
+            {
+                ImpactedSubscriptions.Add(r[0].ToString());
+            }
+
+            if (ImpactedSubscriptions.Count < ImpactedSubscriptionsThreshold)
+            {
+                ActionSuggestions.Add($"&emsp; - We detected {ImpactedSubscriptions.Count} subscription(s) impacted by this incident. Please investigate if these subscriptions needs throttling. Subscription list:");
+                foreach (string sub in ImpactedSubscriptions)
+                {
+                    ActionSuggestions.Add("&emsp; &emsp;" + sub + "<br>");
+                }
+            }
         }
 
         private async Task GetRecentDeploymentInformation()

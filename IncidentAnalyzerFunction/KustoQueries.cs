@@ -236,6 +236,18 @@ namespace IncidentAnalyzerFunction
                                 stampName);
         }
 
+        public static string GetImpactedSubscriptionInformationQuery(string stampName, string startTime)
+        {
+            return string.Format(@"CanaryRunnerPingsGeneva
+                                | where TIMESTAMP > (datetime({0})-30min) and TIMESTAMP < datetime({0})
+                                and Stamp =~ '{1}'
+                                | where HealthStatus != ""Healthy""
+                                | distinct SubscriptionId",
+                                startTime,
+                                stampName);
+            
+        }
+
         public static string DetectErrorsOnWorkerForSLASites(string stampName, string startTime)
         {
             return String.Format(@"AntaresIISLogWorkerTable
