@@ -354,7 +354,7 @@ namespace IncidentAnalyzerFunction
 
             if (ImpactedSubscriptions.Count < ImpactedSubscriptionsThreshold)
             {
-                ActionSuggestions.Add($"&emsp; - We detected {ImpactedSubscriptions.Count} subscription(s) impacted by this incident. Please investigate if these subscriptions needs throttling. Subscription list:");
+                ActionSuggestions.Add($"&emsp; - We detected only {ImpactedSubscriptions.Count} subscription(s) impacted by this incident. Please investigate if these subscriptions needs throttling. Please note that the impact could change as incident is open for longer time, please continue monitroing. Subscription list:");
                 foreach (string sub in ImpactedSubscriptions)
                 {
                     ActionSuggestions.Add("&emsp; &emsp;" + sub + "<br>");
