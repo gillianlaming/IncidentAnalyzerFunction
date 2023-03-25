@@ -23,7 +23,8 @@ namespace IncidentAnalyzerFunction
             { 7, "FileServerIssue" },
             { 8, "WorkerErrorsForSLASites" },
             { 9, "CongestedSMBPool" },
-            { 10, "DataRoleCacheConsistencyErrors" }
+            { 10, "DataRoleCacheConsistencyErrors" },
+            { 11, "FileServerNetworkConnectivityIssues" }
         };
 
         public ResultCode(int value)

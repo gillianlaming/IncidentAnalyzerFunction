@@ -51,7 +51,8 @@ namespace IncidentAnalyzerFunction
             { "TestForFileServerIssue", 7 },
             { "TestForProblemWorkersForSLASites", 8 },
             { "TestForCongestedSMBPool", 9 },
-            { "TestForDataRoleCacheInconsistency", 10 }
+            { "TestForDataRoleCacheInconsistency", 10 },
+            { "TestForFileServerNetworkConnectivityIssues", 11 }
         };
 
         public TestCase(string testName)

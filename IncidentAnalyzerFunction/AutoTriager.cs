@@ -188,6 +188,11 @@ namespace IncidentAnalyzerFunction
             {
                 Writer.WriteLine(KustoQueries.GetDataRoleCacheConsistencyErrors(Context.StartTime, Context.StampName));
             }
+
+            if (resultCodeValue == 11)
+            {
+                Writer.WriteLine(KustoQueries.CheckForFileServerNetworkingIssue(Context.StampName, Context.StartTime, Context.EndTime));
+            }
         }
 
         private void PrintActionSuggesions()
@@ -683,8 +688,6 @@ namespace IncidentAnalyzerFunction
                 if (errorAndCount.Count > 0)
                 {
                     string storageAccountName = await GetAzureStorageAccountName();
-
-                    //azureStorageIssue = true;
                     tc.Result = TestCase.TestResult.ProblemDetected;
                     string result = "<br> &emsp; - Azure Storage side problem detected.";
                     foreach (KeyValuePair<string, string> kvp in errorAndCount)
@@ -703,11 +706,55 @@ namespace IncidentAnalyzerFunction
                 }
 
                 TestsRun.Add(tc);
+
+                if (tc.Result == TestCase.TestResult.ProblemDetected)
+                {
+                    // Run specific test to see if there is a networking issue
+                    await TestForFileServerNetworkConnectivityIssues();
+                }
             }
             catch (Exception ex)
             {
                 Writer.WriteLine($"There was a query failure when running TestForAzureStorageIssue: {ex.ToString()} <br>");
             }
+        }
+
+        private async Task TestForFileServerNetworkConnectivityIssues()
+        {
+            try
+            {
+                TestCase tc = new TestCase("TestForFileServerNetworkConnectivityIssues");
+                string query = KustoQueries.CheckForFileServerNetworkingIssue(Context.StampName, Context.StartTime, Context.EndTime);
+                IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
+
+                String fileServersWithNetworkConnectivityIssues = "";
+                while (r.Read())
+                {
+                    tc.Result = TestCase.TestResult.ProblemDetected;
+                    fileServersWithNetworkConnectivityIssues += r[0] + ", ";
+                }
+
+                if (tc.Result == TestCase.TestResult.ProblemDetected)
+                {
+                    string result = "<br> &emsp; - If you RA the xstore team, please tell them that we detected File Server network connectivity issues on the following fileservers";
+                    result += $"<br> &emsp;";
+                    result += fileServersWithNetworkConnectivityIssues;
+
+                    tc.ResultMessage.Add(result);
+                    tc.ActionSuggestions.Add($"&emsp; - We detected network connectivity issues on {fileServersWithNetworkConnectivityIssues}");
+                }
+                else
+                {
+                    tc.Result = TestCase.TestResult.Passed;
+                }
+
+                TestsRun.Add(tc);
+            }
+            catch (Exception ex)
+            {
+                Writer.WriteLine($"There was a query failure when running TestForAzureStorageIssue: {ex.ToString()} <br>");
+            }
+
         }
 
 

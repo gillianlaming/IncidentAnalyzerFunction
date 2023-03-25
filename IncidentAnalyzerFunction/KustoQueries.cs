@@ -53,6 +53,21 @@ namespace IncidentAnalyzerFunction
                             );
         }
 
+        public static string CheckForFileServerNetworkingIssue(string stampName, string startTime, string endTime)
+        {
+            return string.Format(@"XDriveEventTableV2
+                            | where EventPrimaryStampName == '{0}'
+                            | where TIMESTAMP between (datetime({1}) .. datetime({2}))
+                            | where Role == ""FileServerRole""
+                            | where VolumeType ==""RW""
+                            | where EventId == 1
+                            | where ConnEstablishmentDelayMs > 4900 and ConnEstablishmentDelayMs  < 5100
+                            | summarize count() by RoleInstance",
+                            stampName,
+                            startTime,
+                            endTime);
+        }
+
         public static string FileServerRwLatencyQuery(string stampName, string startTime, string endTIme)
         {
             return string.Format(@"let ['_aggregationPeriod']='1m';
