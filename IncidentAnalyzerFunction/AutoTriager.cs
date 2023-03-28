@@ -610,7 +610,9 @@ namespace IncidentAnalyzerFunction
                     {
                         isSlowestFileServerReadSlow = true;
                         sb.Append($"<br> - The slowest read was {fileServerSlowestRead.Item2} ms on {fileServerSlowestRead.Item1}");
-                        if (fileServerSecondSlowestRead.Item2 > SlowReadThreshold)
+                        
+                        //If second slowest read also passed the threshold and it's 10x slower than the slowest read, then we have a multi-file server storage issue
+                        if (fileServerSecondSlowestRead.Item2 > SlowReadThreshold && fileServerSecondSlowestRead.Item2 * 10 > fileServerSlowestRead.Item2)
                         {
                             isSecondSlowestFileServerReadSlow = true;
                             sb.Append($"<br> - The second slowest read was {fileServerSecondSlowestRead.Item2} ms on {fileServerSecondSlowestRead.Item1}, multiple file servers have high read latency.");
@@ -626,7 +628,8 @@ namespace IncidentAnalyzerFunction
                     {
                         isSlowestFileServerWriteSlow = true;
                         sb.Append($"<br> - The slowest write was {fileServerSlowestWrite.Item2} ms on {fileServerSlowestWrite.Item1}");
-                        if (fileServerSecondSlowestWrite.Item2 > SlowWriteThreshold)
+                        //If second slowest write also passed the threshold and it's 10x slower than the slowest read, then we have a multi-file server storage issue
+                        if (fileServerSecondSlowestWrite.Item2 > SlowWriteThreshold && fileServerSecondSlowestWrite.Item2 * 10 > fileServerSlowestWrite.Item2)
                         {
                             isSecondSlowestFileServerWriteSlow = true;
                             sb.Append($"<br> - The second slowest write was {fileServerSecondSlowestWrite.Item2} ms on {fileServerSecondSlowestWrite.Item1}, multiple file servers have high write latency.");
