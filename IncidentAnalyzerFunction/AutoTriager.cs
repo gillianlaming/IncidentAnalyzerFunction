@@ -250,7 +250,7 @@ namespace IncidentAnalyzerFunction
                          TestSpikeInFrontEndErrors(),
                          TestForCongestedSMBPool(),
                          TestForDataRoleCacheInconsistency(),
-                         GetImpactedSubInformation(),
+                         //GetImpactedSubInformation(),
                          GetRecentDeploymentInformation());
         }
 
