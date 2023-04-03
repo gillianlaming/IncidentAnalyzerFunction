@@ -66,7 +66,7 @@ namespace IncidentAnalyzerFunction
 
                 Writer.WriteLine(FormattingHelper.FormatTitle("Incident Auto-Triage Report:"));
 
-                Writer.WriteLine($"<a href='https://dataexplorer.azure.com/dashboards/8b62920a-5a4c-490b-8f2d-3de34a73123a?p-_startTime=6hours&p-_endTime=now&p-_stampName=v-{Context.StampName}&p-_cluster=v-{Context.Cluster}#865b6c83-60dc-4a99-8acc-c19e0bcfe9c8' target = \"_blank\"> Auto Triage Dashboard</a><br>");
+                Writer.WriteLine($"<a href='https://dataexplorer.azure.com/dashboards/8b62920a-5a4c-490b-8f2d-3de34a73123a?p-_startTime={Context.StartTime}&p-_endTime={Context.EndTime}&p-_stampName=v-{Context.StampName}&p-_cluster=v-{Context.Cluster}#865b6c83-60dc-4a99-8acc-c19e0bcfe9c8' target = \"_blank\"> Auto Triage Dashboard</a><br>");
 
                 if (KindOfIncident == IncidentType.CanaryTwoPercent)
                 {
