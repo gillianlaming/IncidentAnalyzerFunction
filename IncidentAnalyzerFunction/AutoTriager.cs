@@ -677,6 +677,7 @@ namespace IncidentAnalyzerFunction
                 TestCase tc = new TestCase("TestForAzureStorageIssue");
                 string query = KustoQueries.AzureStorageErrorQuery(Context.StampName, Context.StartTime, Context.EndTime);
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
+                int azureStorageErrorThreshold = 50;
 
                 Dictionary<string, string> errorAndCount = new Dictionary<string, string>();
 
@@ -690,18 +691,25 @@ namespace IncidentAnalyzerFunction
 
                 if (errorAndCount.Count > 0)
                 {
-                    string storageAccountName = await GetAzureStorageAccountName();
-                    tc.Result = TestCase.TestResult.ProblemDetected;
-                    string result = "<br> &emsp; - Azure Storage side problem detected.";
+                    // check each errorAndCound, if any value > azureStorageErrorThreshold, then move forward, otherwise return
                     foreach (KeyValuePair<string, string> kvp in errorAndCount)
                     {
-                        result += $"<br> &emsp; - NtStatusInfo : {kvp.Key}, Count: {kvp.Value}";
+                        if (int.Parse(kvp.Value) > azureStorageErrorThreshold)
+                        {
+                            tc.Result = TestCase.TestResult.ProblemDetected;
+                            string result = "<br> &emsp; - Azure Storage side problem detected.";
+                            foreach (KeyValuePair<string, string> kvp1 in errorAndCount)
+                            {
+                                result += $"<br> &emsp; - NtStatusInfo : {kvp1.Key}, Count: {kvp1.Value}";
+                            }
+
+                            string storageAccountName = await GetAzureStorageAccountName();
+                            result += $"<br> &emsp; - We suggest you request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}";
+                            tc.ResultMessage.Add(result);
+                            tc.ActionSuggestions.Add($"&emsp; - Request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}");
+                            break;
+                        }
                     }
-
-                    result += $"<br> &emsp; - We suggest you request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}";
-
-                    tc.ResultMessage.Add(result);
-                    tc.ActionSuggestions.Add($"&emsp; - Request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}");
                 }
                 else
                 {
