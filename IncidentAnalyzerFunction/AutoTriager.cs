@@ -195,6 +195,11 @@ namespace IncidentAnalyzerFunction
             {
                 Writer.WriteLine(KustoQueries.CheckForFileServerNetworkingIssue(Context.StampName, Context.StartTime, Context.EndTime));
             }
+
+            if (resultCodeValue == 12)
+            {
+                Writer.WriteLine(KustoQueries.HostingDbCpuQuery(Context.StampName, Context.StartTime, Context.EndTime));
+            }
         }
 
         private void PrintActionSuggesions()
@@ -516,8 +521,8 @@ namespace IncidentAnalyzerFunction
         {
             try
             {
-                const double CpuThreshold = 0.85;
-                const int MinutesOfCpuHighToDeclareCpuOutage = 5;
+                const double CpuThreshold = 85;
+                const int MinutesOfCpuHighToDeclareCpuOutage = 8;
                 const string AvgCPUCounter = "Avg CPU Percent";
                 const string AvgInstanceCPUCounter = "Avg Instance CPU Percent";
                 const string DTUCounter = "DTU Limit";
@@ -559,9 +564,9 @@ namespace IncidentAnalyzerFunction
                 if (avgCpuExceedThresholdCount > MinutesOfCpuHighToDeclareCpuOutage || avgInstanceCpuExceedThresholdCount > MinutesOfCpuHighToDeclareCpuOutage)
                 {
                     tc.Result = TestCase.TestResult.ProblemDetected;
-                    tc.ResultMessage.Add($"<br> - We detected that hosting db CPU above {CpuThreshold * 100}% for a period of {MinutesOfCpuHighToDeclareCpuOutage} minutes or longer.");
+                    tc.ResultMessage.Add($"<br> - We detected that hosting db CPU above {CpuThreshold}% for a period of {MinutesOfCpuHighToDeclareCpuOutage} minutes or longer.");
                     tc.ActionSuggestions.Add($"<a href='https://microsoft.sharepoint.com/teams/Antares/_layouts/OneNote.aspx?id=%2Fteams%2FAntares%2FShared%20Documents%2FServicing%2FWAWS%20Servicing%20Handbook&wd=target%28Internal%20TSG.one%7C2F88A99A-3E89-45BA-82F7-EC793A605F47%2FiTSG%3A%20How%20to%20Scale%20a%20hosting%20DB%7CBBE8504D-EF1A-44D7-B04C-834883AC467D%2F%29\r\nonenote:https://microsoft.sharepoint.com/teams/Antares/Shared%20Documents/Servicing/WAWS%20Servicing%20Handbook/Internal%20TSG.one#iTSG%20How%20to%20Scale%20a%20hosting%20DB&section-id={{2F88A99A-3E89-45BA-82F7-EC793A605F47}}&page-id={{BBE8504D-EF1A-44D7-B04C-834883AC467D}}&end' target = \"_blank\"> Scale up hosting db TSG link</a><br>");
-                    tc.ActionSuggestions.Add($"&emsp; - We detected that hosting db CPU above {CpuThreshold * 100}% for a period of {MinutesOfCpuHighToDeclareCpuOutage} minutes or longer. Automorphism is supposed to handle database scaling. If it doesn't, follow this TSG:");
+                    tc.ActionSuggestions.Add($"&emsp; - We detected that hosting db CPU above {CpuThreshold}% for a period of {MinutesOfCpuHighToDeclareCpuOutage} minutes or longer. Automorphism is supposed to handle database scaling. If it doesn't, follow this TSG:");
                 }
 
                 if (dbDTULimits.Count() > 1)
@@ -744,7 +749,7 @@ namespace IncidentAnalyzerFunction
                 const int ErrorCountThreshold = 10;
                 //bool azureStorageIssue = false;
 
-                TestCase tc = new TestCase("TestForXStoreIssue");
+                TestCase tc = new TestCase("TestForAzureStorageIssue");
                 string query = KustoQueries.AzureStorageErrorQuery(Context.StampName, Context.StartTime, Context.EndTime);
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
                 int azureStorageErrorThreshold = 50;
