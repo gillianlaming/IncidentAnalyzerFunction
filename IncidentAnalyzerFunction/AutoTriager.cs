@@ -522,7 +522,7 @@ namespace IncidentAnalyzerFunction
             try
             {
                 const double CpuThreshold = 85;
-                const int MinutesOfCpuHighToDeclareCpuOutage = 10;
+                const int MinutesOfCpuHighToDeclareCpuOutage = 8;
                 const string AvgCPUCounter = "Avg CPU Percent";
                 const string AvgInstanceCPUCounter = "Avg Instance CPU Percent";
                 const string DTUCounter = "DTU Limit";
