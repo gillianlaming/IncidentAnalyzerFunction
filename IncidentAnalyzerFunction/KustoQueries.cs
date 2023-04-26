@@ -26,6 +26,18 @@ namespace IncidentAnalyzerFunction
                             );
         }
 
+        public static string HostingDbCpuQuery(string stampName, string startTime, string endTime)
+        {
+            return string.Format(@"DBStatsFiveMinuteTable
+                                | where EventPrimaryStampName == '{0}' 
+                                | where TIMESTAMP between (datetime({1}) ..  datetime({2}))
+                                | where CounterName in (""Avg CPU Percent"", ""Avg Instance CPU Percent"", ""DTU Limit"")
+                                | project CounterName, CounterValue",
+                                stampName,
+                                startTime,
+                                endTime);
+        }
+
         public static string AzureStorageErrorQuery(string stampName, string startTime, string endTime)
         {
             return string.Format(@"XDriveEventTableV2
