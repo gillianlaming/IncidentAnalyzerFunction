@@ -24,7 +24,8 @@ namespace IncidentAnalyzerFunction
             { 8, "WorkerErrorsForSLASites" },
             { 9, "CongestedSMBPool" },
             { 10, "DataRoleCacheConsistencyErrors" },
-            { 11, "FileServerNetworkConnectivityIssues" }
+            { 11, "FileServerNetworkConnectivityIssues" },
+            { 12, "HostingDbCPUHightIssue"}
         };
 
         public ResultCode(int value)

@@ -195,6 +195,11 @@ namespace IncidentAnalyzerFunction
             {
                 Writer.WriteLine(KustoQueries.CheckForFileServerNetworkingIssue(Context.StampName, Context.StartTime, Context.EndTime));
             }
+
+            if (resultCodeValue == 12)
+            {
+                Writer.WriteLine(KustoQueries.HostingDbCpuQuery(Context.StampName, Context.StartTime, Context.EndTime));
+            }
         }
 
         private void PrintActionSuggesions()
@@ -247,6 +252,7 @@ namespace IncidentAnalyzerFunction
             Task.WaitAll(TestFor503_65(),
                          TestForSpikeInFrontEndTraffic(),
                          TestForStorageIssue(),
+                         TestForHostingDbCpuIssue(),
                          TestForAzureStorageIssue(),
                          TestForFileServerIssue(),
                          TestSpikeInFrontEndErrors(),
@@ -511,6 +517,73 @@ namespace IncidentAnalyzerFunction
             }
         }
 
+        private async Task TestForHostingDbCpuIssue()
+        {
+            try
+            {
+                const double CpuThreshold = 85;
+                const int MinutesOfCpuHighToDeclareCpuOutage = 8;
+                const string AvgCPUCounter = "Avg CPU Percent";
+                const string AvgInstanceCPUCounter = "Avg Instance CPU Percent";
+                const string DTUCounter = "DTU Limit";
+
+                TestCase tc = new TestCase("TestForHostingDbCpuIssue");
+
+                string query = KustoQueries.HostingDbCpuQuery(Context.StampName, Context.StartTime, Context.EndTime);
+
+                IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
+
+                HashSet<int> dbDTULimits = new HashSet<int>();
+                int avgCpuExceedThresholdCount = 0;
+                int avgInstanceCpuExceedThresholdCount = 0;
+
+                while (r.Read())
+                {
+                    if (string.Equals(r[0].ToString(), AvgCPUCounter, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (double.Parse(r[1].ToString()) > CpuThreshold)
+                        {
+                            avgCpuExceedThresholdCount++;
+                        }
+                    }
+
+                    if (string.Equals(r[0].ToString(), AvgInstanceCPUCounter, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (double.Parse(r[1].ToString()) > CpuThreshold)
+                        {
+                            avgInstanceCpuExceedThresholdCount++;
+                        }
+                    }
+
+                    if (string.Equals(r[0].ToString(), DTUCounter, StringComparison.OrdinalIgnoreCase))
+                    {
+                        dbDTULimits.Add(int.Parse(r[1].ToString()));
+                    }
+                }
+
+                if (avgCpuExceedThresholdCount > MinutesOfCpuHighToDeclareCpuOutage || avgInstanceCpuExceedThresholdCount > MinutesOfCpuHighToDeclareCpuOutage)
+                {
+                    tc.Result = TestCase.TestResult.ProblemDetected;
+                    tc.ResultMessage.Add($"<br> - We detected that hosting db CPU above {CpuThreshold}% for a period of {MinutesOfCpuHighToDeclareCpuOutage} minutes or longer.");
+                    tc.ActionSuggestions.Add($"<a href='https://microsoft.sharepoint.com/teams/Antares/_layouts/OneNote.aspx?id=%2Fteams%2FAntares%2FShared%20Documents%2FServicing%2FWAWS%20Servicing%20Handbook&wd=target%28Internal%20TSG.one%7C2F88A99A-3E89-45BA-82F7-EC793A605F47%2FiTSG%3A%20How%20to%20Scale%20a%20hosting%20DB%7CBBE8504D-EF1A-44D7-B04C-834883AC467D%2F%29\r\nonenote:https://microsoft.sharepoint.com/teams/Antares/Shared%20Documents/Servicing/WAWS%20Servicing%20Handbook/Internal%20TSG.one#iTSG%20How%20to%20Scale%20a%20hosting%20DB&section-id={{2F88A99A-3E89-45BA-82F7-EC793A605F47}}&page-id={{BBE8504D-EF1A-44D7-B04C-834883AC467D}}&end' target = \"_blank\"> Scale up hosting db TSG link</a><br>");
+                    tc.ActionSuggestions.Add($"&emsp; - We detected that hosting db CPU above {CpuThreshold}% for a while in the past two hours. Automorphism is supposed to handle database scaling. If it doesn't, follow this TSG:");
+                }
+
+                if (dbDTULimits.Count() > 1)
+                { 
+                    tc.Result = TestCase.TestResult.ProblemDetected;
+                    tc.ResultMessage.Add($"<br> - We detected hosting DB sku changed over the period");
+                    tc.ActionSuggestions.Add("&emsp; - Hosting DB sku has already changed, please check if automorphism scaled the hosting db sku");
+                }
+
+                TestsRun.Add(tc);
+            }
+            catch (Exception ex)
+            {
+                Writer.WriteLine("There was a query failure when running TestForHostingDbCPUIssue <br>");
+            }
+        }
+
         private async Task TestForStorageIssue()
         {
             try
@@ -557,7 +630,7 @@ namespace IncidentAnalyzerFunction
             }
             catch (Exception ex)
             {
-                Writer.WriteLine("There was a query failure when running TestForStorageIssue <br>");
+                Writer.WriteLine("There was a query failure when running TestForStorageAvailability <br>");
             }
         }
 
@@ -679,6 +752,7 @@ namespace IncidentAnalyzerFunction
                 TestCase tc = new TestCase("TestForAzureStorageIssue");
                 string query = KustoQueries.AzureStorageErrorQuery(Context.StampName, Context.StartTime, Context.EndTime);
                 IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
+                int azureStorageErrorThreshold = 50;
 
                 Dictionary<string, string> errorAndCount = new Dictionary<string, string>();
 
@@ -692,18 +766,25 @@ namespace IncidentAnalyzerFunction
 
                 if (errorAndCount.Count > 0)
                 {
-                    string storageAccountName = await GetAzureStorageAccountName();
-                    tc.Result = TestCase.TestResult.ProblemDetected;
-                    string result = "<br> &emsp; - Azure Storage side problem detected.";
+                    // check each errorAndCound, if any value > azureStorageErrorThreshold, then move forward, otherwise return
                     foreach (KeyValuePair<string, string> kvp in errorAndCount)
                     {
-                        result += $"<br> &emsp; - NtStatusInfo : {kvp.Key}, Count: {kvp.Value}";
+                        if (int.Parse(kvp.Value) > azureStorageErrorThreshold)
+                        {
+                            tc.Result = TestCase.TestResult.ProblemDetected;
+                            string result = "<br> &emsp; - Azure Storage side problem detected.";
+                            foreach (KeyValuePair<string, string> kvp1 in errorAndCount)
+                            {
+                                result += $"<br> &emsp; - NtStatusInfo : {kvp1.Key}, Count: {kvp1.Value}";
+                            }
+
+                            string storageAccountName = await GetAzureStorageAccountName();
+                            result += $"<br> &emsp; - We suggest you request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}";
+                            tc.ResultMessage.Add(result);
+                            tc.ActionSuggestions.Add($"&emsp; - Request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}");
+                            break;
+                        }
                     }
-
-                    result += $"<br> &emsp; - We suggest you request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}";
-
-                    tc.ResultMessage.Add(result);
-                    tc.ActionSuggestions.Add($"&emsp; - Request assistance from XStore team (XStore/Triage). The storage account name is {storageAccountName}");
                 }
                 else
                 {
