@@ -145,7 +145,7 @@ namespace IncidentAnalyzerFunction
                             | summarize count() by bin(TIMESTAMP, 5m)
                             | summarize Max=max(count_), Min=min(count_), Avg=avg(count_) by bin(TIMESTAMP, 1h)
                             | extend MaxToAvgRatio = round((Max/Avg), 3)
-                            | extend IsDDOSThreat = iff(MaxToAvgRatio > 1.8, 1, 0)
+                            | extend IsDDOSThreat = iff(MaxToAvgRatio > 1.8 and Max >= 1000, 1, 0)  
                             | summarize max(TIMESTAMP) by IsDDOSThreat, MaxToAvgRatio
                             | where IsDDOSThreat == 1
                             | order by max_TIMESTAMP asc",
