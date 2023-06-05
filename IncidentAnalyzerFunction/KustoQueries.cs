@@ -121,6 +121,17 @@ namespace IncidentAnalyzerFunction
                                 endTIme);
         }
 
+        public static string IsolatedStorageVolumeQuery(string stampName, string startTime)
+        {
+            return string.Format(@"AntaresAdminControllerEvents
+                                | where EventPrimaryStampName == '{0}'
+                                | where TIMESTAMP between (datetime({0})..now())
+                                | where Address contains ""UpdateStorageVolumeForIsolation""
+                                | project TIMESTAMP, Address",
+                                stampName,
+                                startTime);
+        }
+
         public static string GetDataRoleCacheConsistencyErrors(string startTime, string stampName)
         {
             return string.Format(@"AntaresRuntimeDataServiceEvents

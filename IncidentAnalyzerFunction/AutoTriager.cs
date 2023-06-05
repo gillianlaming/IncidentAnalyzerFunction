@@ -600,7 +600,7 @@ namespace IncidentAnalyzerFunction
                 bool storageIssueDuringPreviousMinute = false;
                 int maxNumMinutesStorageDowntime = 0;
                 int numMinutesStorageAvailDropped = 0;
-                
+
                 while (r.Read())
                 {
                     if (double.Parse(r[1].ToString()) <= AvailabilityThreshold)
@@ -614,7 +614,6 @@ namespace IncidentAnalyzerFunction
                         storageIssueDuringPreviousMinute = false;
                     }
                 }
-
 
                 if (maxNumMinutesStorageDowntime >= MinutesOfStorageGlitchyToDeclareStorageOutage)
                 {
@@ -722,7 +721,7 @@ namespace IncidentAnalyzerFunction
                     if ((isSlowestFileServerReadSlow && !isSecondSlowestFileServerReadSlow) || (isSlowestFileServerWriteSlow && !isSecondSlowestFileServerWriteSlow))
                     {
                         sb.Append($"<br> - A file server is experiencing slow read or write. We suggest you reboot {fileServerToReboot}");
-                        
+                        Dictionary<string, string> isolatedStorageVolume = await GetIsolatedStorageVolume();
                         tc.ActionSuggestions.Add($"<a href='{GenerateStorageDashboardLink(Context.StampName, Context.StartTime, Context.EndTime, Context.Cluster)}' target = \"_blank\"> Storage Dashboard Link </a><br>");
                         tc.ActionSuggestions.Add($"- Single file server high latency, we suggest you reboot {fileServerToReboot}.");
                     }
@@ -741,6 +740,35 @@ namespace IncidentAnalyzerFunction
                 Writer.WriteLine("There was a query failure when running TestForFileServerIssue <br>");
             }
         }
+
+        private async Task<Dictionary<string, string>> GetIsolatedStorageVolume()
+        {
+            string query = KustoQueries.IsolatedStorageVolumeQuery(Context.StampName, Context.StartTime);
+            IDataReader r = await KustoClient.ExecuteQueryAsync(Context.Database, query, Properties);
+            Dictionary<string, string> timeAndVolume = new Dictionary<string, string>();
+
+            while (r.Read())
+            {
+                string time = r[0].ToString();
+                string address = r[1].ToString();
+                string storageVolume = ParseStorageVolumeNameFromAddress(address);
+                if (!timeAndVolume.ContainsKey(time))
+                {
+                    timeAndVolume.Add(time, storageVolume);
+                }
+            }
+
+            return timeAndVolume;
+        }
+
+        private string ParseStorageVolumeNameFromAddress(string address)
+        {
+            int startIndex = address.IndexOf("storageVolumeName=") + "storageVolumeName=".Length;
+            int endIndex = address.IndexOf('&', startIndex);
+
+            return address.Substring(startIndex, endIndex - startIndex);
+        }
+
 
         private async Task TestForAzureStorageIssue()
         {
