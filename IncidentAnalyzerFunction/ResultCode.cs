@@ -20,9 +20,9 @@ namespace IncidentAnalyzerFunction
             { 4, "SpikeInTrafficToHostname" },
             { 5, "AzureStorageIssue" },
             { 6, "GeneralStorageIssue" },
-            { 7, "FileServerIssue" },
+            { 7, "File Server Issue and CHeck Storage Volume Auto-Isolation" },
             { 8, "WorkerErrorsForSLASites" },
-            { 9, "CongestedSMBPool" },
+            { 9, "Congested SMB Pool and Check Storage Volume Auto-Isolation" },
             { 10, "DataRoleCacheConsistencyErrors" },
             { 11, "FileServerNetworkConnectivityIssues" },
             { 12, "HostingDbCPUHightIssue"}

@@ -125,7 +125,7 @@ namespace IncidentAnalyzerFunction
         {
             return string.Format(@"AntaresAdminControllerEvents
                                 | where EventPrimaryStampName == '{0}'
-                                | where TIMESTAMP between (datetime({0})..now())
+                                | where TIMESTAMP between (datetime({1})..now())
                                 | where Address contains ""UpdateStorageVolumeForIsolation""
                                 | project TIMESTAMP, Address",
                                 stampName,
