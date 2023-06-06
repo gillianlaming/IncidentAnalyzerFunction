@@ -732,7 +732,7 @@ namespace IncidentAnalyzerFunction
 
                         if (isolatedStorageVolume == null || isolatedStorageVolume.Count == 0)
                         {
-                            tc.ActionSuggestions.Add($"- Single file server high latency, please do not reboot {fileServerToReboot} as auto-mitigation might have taken placed and not showed up in telemetry yet. Check Geneva action for the auto-mitigation: <a href='https://azurealerting.trafficmanager.net/genevaactionhistory/39e8aff4-2d8f-40c4-84c5-4dac0b930c45?state=&timespan=3d&timestamp=&count=' target = \"_blank\"> Storage Volume Auto-Isolation Link </a> If it doesn't mitigate after a while due to storage issue, please engage Files and Worker Loop");
+                            tc.ActionSuggestions.Add($"-[No Action Required] Single file server high latency, please DO NOT REBOOT {fileServerToReboot} as auto-mitigation might have taken placed and not showed up in telemetry yet. Check Geneva action for the auto-mitigation: <a href='https://azurealerting.trafficmanager.net/genevaactionhistory/39e8aff4-2d8f-40c4-84c5-4dac0b930c45?state=&timespan=3d&timestamp=&count=' target = \"_blank\"> Storage Volume Auto-Isolation Link </a> If it doesn't mitigate after a while due to storage issue, please engage Files and Worker Loop");
                         }
                         else
                         {
@@ -741,7 +741,7 @@ namespace IncidentAnalyzerFunction
                                 sb.Append($"<br> storage volume {volume} has been isolated on the file server");
                             }
 
-                            tc.ActionSuggestions.Add($"- Single file server {fileServerToReboot} high latency, auto-mitigation has been applied. Check Geneva action for the auto-mitigation: <a href='https://azurealerting.trafficmanager.net/genevaactionhistory/39e8aff4-2d8f-40c4-84c5-4dac0b930c45?state=&timespan=3d&timestamp=&count=' target = \"_blank\"> Storage Volume Auto-Isolation Link </a>. Auto mitigation query is provided in the 'Results Summary and Queries' part If it doesn't mitigate after a while due to storage issue, please engage Files and Worker Loop.");
+                            tc.ActionSuggestions.Add($"-[No Action Required] Single file server {fileServerToReboot} high latency, DO NOT REBOOT as auto-mitigation has been applied. Check Geneva action for the auto-mitigation: <a href='https://azurealerting.trafficmanager.net/genevaactionhistory/39e8aff4-2d8f-40c4-84c5-4dac0b930c45?state=&timespan=3d&timestamp=&count=' target = \"_blank\"> Storage Volume Auto-Isolation Link </a>. Auto mitigation query is provided in the 'Results Summary and Queries' part If it doesn't mitigate after a while due to storage issue, please engage Files and Worker Loop.");
                         }
                     }
 
@@ -1030,7 +1030,7 @@ namespace IncidentAnalyzerFunction
                     Dictionary<string, string> isolatedStorageVolume = await GetIsolatedStorageVolume();
                     if (isolatedStorageVolume == null || isolatedStorageVolume.Count == 0)
                     {
-                        tc.ActionSuggestions.Add($"- Single file server high latency, please do not reboot {r[1]} as auto-mitigation might have taken placed and not showed up in telemetry yet. Check Geneva action for the auto-mitigation: <a href='https://azurealerting.trafficmanager.net/alert/39e8aff4-2d8f-40c4-84c5-4dac0b930c45' target = \"_blank\"> Storage Volume Auto-Isolation Link </a> If it doesn't mitigate after a while due to storage issue, please engage Files and Worker Loop");
+                        tc.ActionSuggestions.Add($"-[No Action Required] Single file server high latency, please DO NOT REBOOT {r[1]} now as auto-mitigation might have taken placed and not showed up in telemetry yet. Check Geneva action for the auto-mitigation: <a href='https://azurealerting.trafficmanager.net/alert/39e8aff4-2d8f-40c4-84c5-4dac0b930c45' target = \"_blank\"> Storage Volume Auto-Isolation Link </a>. If it doesn't mitigate after a while due to storage issue, please engage Files and Worker Loop");
                     }
                     else
                     {
@@ -1039,7 +1039,7 @@ namespace IncidentAnalyzerFunction
                             result += $"<br> storage volume {volume} has been isolated on the file server";
                         }
 
-                        tc.ActionSuggestions.Add($"- Single file server {fileServersToReboot} high latency, auto-mitigation has been applied. Check Geneva action for the auto-mitigation: <a href='https://azurealerting.trafficmanager.net/genevaactionhistory/39e8aff4-2d8f-40c4-84c5-4dac0b930c45?state=&timespan=3d&timestamp=&count=' target = \"_blank\"> Storage Volume Auto-Isolation Link </a>. Auto mitigation query is provided in the 'Results Summary and Queries' part If it doesn't mitigate after a while due to storage issue, please engage Files and Worker Loop.");
+                        tc.ActionSuggestions.Add($"-[No Action Required] Single file server {fileServersToReboot} high latency, DO NOT REBOOT as auto-mitigation has been applied. Check Geneva action for the auto-mitigation: <a href='https://azurealerting.trafficmanager.net/genevaactionhistory/39e8aff4-2d8f-40c4-84c5-4dac0b930c45?state=&timespan=3d&timestamp=&count=' target = \"_blank\"> Storage Volume Auto-Isolation Link </a>. Auto mitigation query is provided in the 'Results Summary and Queries' part If it doesn't mitigate after a while due to storage issue, please engage Files and Worker Loop.");
                     }
 
                     tc.ResultMessage.Add(result);
